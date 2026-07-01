@@ -19,10 +19,11 @@ The single source of "where we are and what's next," so any session can resume w
 - Requirements split into an index (`docs/requirements.md`) + per-topic docs under `docs/requirements/` (data model, time tracking, invoicing, access-control, tech-and-nfr); cross-references in `architecture.md` updated.
 - Requirements **gap review** completed: Tier-1 one-way doors resolved via interview (identity/membership split, multi-role union, org-shared ownership, Organization fields, currency + rounding) and Tier-2/3 clarifications folded into the requirements docs; decision log updated (D7–D10, G4 refresh, new G11).
 - **Second gap pass** (external review) resolved: defer field-level rate stripping (record `rate.view` capability + G2/G10 seam), plan period-based invoice selection (month/quarter/custom, not built), and store time-entry dates as date-only/browser-local (decision D11).
+- **Structural gap pass** (external, DB-focused) resolved: added Invoice/InvoiceLine + Time Entry to the data model and ER diagram with billed-link FKs; deletion/archive guardrail G12 (`Restrict`, archive-don't-delete) + `ProjectTask.active`; By-Person invoice grouping splits per rate; optional Harvest-style line-item detail (date/person/task/note); future-dated entries warn-and-acknowledge.
 
 ## In progress
 
-- Gap-review edits committed on `feature/requirements-gap-review`, ready for your review/merge to `develop`. Covers the interview-resolved Tier-1 doors, the Tier-2/3 defaults (invoice numbering, fixed-fee anti-double-bill, DB-stored logo), and a second external-review pass (defer rate-stripping behind `rate.view`; invoice period-selection planned; date-only browser-local entry dates).
+- `develop` holds the merged first gap review (Tier-1/2/3). The external-review follow-ups sit on `feature/reviewer-gap-pass` (unmerged, ready for your review/merge): pass A — `rate.view` seam, deferred invoice period-selection, date-only entry dates; pass B (structural) — Invoice/InvoiceLine entities + billed-link FKs, archive-not-delete guardrail G12 + `ProjectTask.active`, By-Person split-per-rate, optional line-item detail, future-date warn-and-acknowledge.
 
 ## Next up (ordered)
 
