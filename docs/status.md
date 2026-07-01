@@ -4,9 +4,9 @@ The single source of "where we are and what's next," so any session can resume w
 
 ## Snapshot
 
-- **Date:** 2026-06-30
-- **Phase:** Requirements complete; pre-implementation (no app code yet).
-- **Git:** `develop` holds merged requirements; work continues on short-lived `feature/` branches.
+- **Date:** 2026-07-01
+- **Phase:** Requirements complete + Tier-1/2/3 gap review resolved; pre-implementation (no app code yet).
+- **Git:** `develop` holds merged requirements; the gap-review edits sit on `feature/requirements-gap-review` pending your merge.
 - **App runnable?** No — nothing scaffolded yet.
 
 ## Done
@@ -17,21 +17,21 @@ The single source of "where we are and what's next," so any session can resume w
 - This status/continuity file created.
 - `AGENTS.md` conventions extended: one-way/two-way door test (design-check trigger C), decision-log upkeep rule, forward-compat working-style bullet. `.gitattributes` added to normalize line endings.
 - Requirements split into an index (`docs/requirements.md`) + per-topic docs under `docs/requirements/` (data model, time tracking, invoicing, access-control, tech-and-nfr); cross-references in `architecture.md` updated.
+- Requirements **gap review** completed: Tier-1 one-way doors resolved via interview (identity/membership split, multi-role union, org-shared ownership, Organization fields, currency + rounding) and Tier-2/3 clarifications folded into the requirements docs; decision log updated (D7–D10, G4 refresh, new G11).
 
 ## In progress
 
-- Nothing mid-flight. Clean stopping point.
+- Gap-review edits committed on `feature/requirements-gap-review`, ready for your review/merge to `develop`. The Tier-2/3 items were applied using recommended defaults (invoice numbering, fixed-fee anti-double-bill, DB-stored logo, single timezone) — worth a skim in case any should change.
 
 ## Next up (ordered)
 
-1. **Requirements gap review (before planning):** review the requirements docs for gaps, omissions, and unstated assumptions using a max-effort model pass (Fable or Opus 4.8 at max effort). Feed anything found back into the relevant `docs/requirements/` docs before moving to the plan.
-2. **Implementation plan** (`docs/plan.md`): the Prisma schema (entities from the [data model](requirements/data-model.md) and [access-control](requirements/access-control.md) docs), a milestone breakdown, and the first vertical slice to build. Include the required Progress table.
-3. **Scaffold the app:** Next.js + TypeScript + Prisma (SQLite) + Tailwind/shadcn + Auth.js, with the shared authz + org-scoping helpers (guardrails G10) stubbed in from the start.
-4. **First vertical slice:** seeded login → create a client → list clients. Proves the auth boundary, org-scoping, and the data layer end-to-end on one thin path.
+1. **Implementation plan** (`docs/plan.md`): the Prisma schema (entities from the [data model](requirements/data-model.md) — Organization, User/Membership/Role, Client, Project, Task, assignment, Time Entry, Invoice — honoring decisions D7–D10), a milestone breakdown, and the first vertical slice to build. Include the required Progress table.
+2. **Scaffold the app:** Next.js + TypeScript + Prisma (SQLite) + Tailwind/shadcn + Auth.js, with the shared authz + org-scoping helpers (guardrails G10) stubbed in from the start.
+3. **First vertical slice:** seeded login → create a client → list clients. Proves the auth boundary, org-scoping, and the data layer end-to-end on one thin path.
 
 ## Open questions / deferred decisions
 
-- Manager time visibility: own vs. only-managed-projects vs. all. Deferred (single-user POC makes it moot for now).
+- Manager time visibility **policy** (own vs. only-managed-projects vs. all) is still open; the **mechanism** is settled — owner-scoped rows widened by `time.view.all` (see [access-control](requirements/access-control.md)). Moot while single-user.
 - Production hosting target. Deferred, but a SaaS is inherently hosted (see `architecture.md`).
 - Whether Admin is an orthogonal flag or a top role — intentionally left open because roles become customizable (see [access-control](requirements/access-control.md)).
 

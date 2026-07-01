@@ -11,7 +11,7 @@ Each requirements topic is its own document. To add a feature, create a new doc 
 | Document                                                    | Covers                                                                    | Status |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
 | _(this index)_                                              | Framing & scope, POC in/out boundary                                      | ✅     |
-| [Data model](./requirements/data-model.md)                  | Clients, Projects, Tasks, billing selectors — the **shared spine**        | ✅     |
+| [Data model](./requirements/data-model.md)                  | Org, identity (User/Membership/Role), Clients, Projects, Tasks, billing selectors — the **shared spine** | ✅     |
 | [Time tracking](./requirements/time-tracking.md)            | Live timer + manual entry, day & weekly timesheet views                   | ✅     |
 | [Invoicing](./requirements/invoicing.md)                    | Invoice sources, grouping, draft→finalize lifecycle, output, fields       | ✅     |
 | [Users & access](./requirements/access-control.md)          | Authentication, multi-tenancy, capability-based RBAC                       | ✅     |
