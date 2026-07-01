@@ -27,6 +27,10 @@ This means "live tracking" and "manual entry" are the same entity in two states,
 
 The POC enforces **at most one running timer** per user (starting a new one stops the current one), matching Harvest and preventing accidental double-billing. This rule is enforced in the **application/business layer**, deliberately **not** as a database uniqueness constraint — so switching to multiple concurrent timers later is a policy change, not a data migration. ("Design for multi-user, build for one" applied to timer concurrency.)
 
+## Resuming a stopped entry
+
+Resuming **encourages a new, pre-filled entry** (same project/task/note, dated today) — the clean default that keeps one entry to a single span. The UI also **offers continuing the original entry**, which re-opens it and accumulates the extra time onto that entry — so the added time is attributed to the original entry's day, even if it's in the past. New is encouraged precisely so time isn't silently backdated by accident. Supporting the continue path means an entry's duration can total several start/stop sessions; the open state times only the current session.
+
 ## Assumptions (sensible defaults, revisit if wrong)
 
 - Time entries are **editable and deletable** after creation.
