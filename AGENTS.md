@@ -31,6 +31,7 @@ Start here each session; these persist state so we don't rely on memory or chat 
 
 - Be a collaborator, not a sycophant. Push back and ask questions if the ideas presented are shaky.
 - Don't over-engineer, but don't under-think it either — sanity-check the design before you commit to it. (The "Back-of-the-envelope design check" below is the procedure — including a stop rule so the check itself stays cheap.)
+- Favor forward-compatible foundations: build the simple thing now, but shape one-way-door seams so future growth is additive, not a rewrite. (Trigger C of the design check is the procedure; `docs/architecture.md` holds the standing guardrails.)
 - Don't create files unless needed.
 - Emphasis on keeping code modular so that adding new features or making fixes keeps the number of files that need to be modified to a minimum.
 - Unless specifically asked, don't add comments / docstrings / type hints to code you didn't change.
@@ -54,10 +55,12 @@ Start here each session; these persist state so we don't rely on memory or chat 
 
 ## Back-of-the-envelope design check
 
-Before committing to an approach (a data shape, an algorithm, a structure), run two quick triggers — each one breath. Spend effort only if one fires; most code clears both and should just be written the obvious, clear way.
+Before committing to an approach (a data shape, an algorithm, a structure, a decision), run three quick triggers — each one breath. Spend effort only if one fires; most code clears them and should just be written the obvious, clear way.
 
 - **A — Are you storing what you could derive?** About to put a value into a copy, cache, `data-` attribute, or denormalized blob? Ask "is this computable from something already present?" If yes, read or compute from the canonical source by default — a stored copy is the exception, justified by a *measured* need, never by "the code that reads it is shorter." This is size-independent: it fires whether the copy is tiny or huge, which is what makes it robust to not foreseeing future growth.
 - **B — Does this get multiplied or locked in?** Does it run or store per item (an "N case"), sit on a hot path, or become costly to change later? If no — small, local, reversible — write the obvious version and move on. If yes, do *one* envelope estimate: name what grows, judge the obvious approach's worst-case cost (constant / linear / quadratic / scales-with-size) against the single simplest alternative, and take the cheaper unless it buys real complexity.
+- **C — One-way or two-way door?** (For decisions, not just code: a data-model shape, an identifier scheme, a dependency, an auth or tenancy choice.) Ask "if I build the simple version and I'm wrong, how expensive is the reversal?" Cheap to reverse (two-way door) → build the obvious version and move on. Foundational and costly to reverse (one-way door) → shape the *seam* now so growth is additive, even while the POC keeps the implementation minimal, following the guardrails in `docs/architecture.md`. This is a one-breath classification, not an envelope estimate.
+- **Record one-way doors:** when a decision is a one-way door, confirm it honors the guardrails and add it to the decision log in `docs/architecture.md` — so that file stays a living record, not a one-time snapshot.
 - **Stop rule** (keeps the check itself cheap): one alternative, order-of-magnitude only — no exhaustive search. If estimating would take longer than writing both, write the simple one. Don't optimize what the triggers cleared, and don't duplicate / cache / denormalize without a measured need.
 
 Worked example (trigger A): a list-filtering UI that stored a precomputed search string on every row, duplicating text already present in the rendered output. It was cheap while only a few short fields were searched — so trigger B's scaling estimate alone would have cleared it — but the duplicated copy grew with content and had to be kept in step with the display. The fix was to read the rendered content directly instead of maintaining a parallel copy. This is the failure trigger A catches and B misses.
