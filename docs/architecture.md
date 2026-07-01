@@ -22,7 +22,7 @@ The discipline is a single question per decision: **"If I build the simple versi
 
 ## Architectural guardrails (invariants / seams)
 
-Every change must honor these. Each names the rule, the reason, and the future growth it protects. All are already established in `requirements.md`; this is the consolidated, enforceable list.
+Every change must honor these. Each names the rule, the reason, and the future growth it protects. All are already established across the [requirements docs](./requirements.md); this is the consolidated, enforceable list.
 
 | #   | Guardrail                                                                                          | Why / what it protects                                                                                     |
 | --- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -43,12 +43,12 @@ Point-in-time decisions with their rationale, so future sessions can revisit del
 
 | ID  | Decision                                                              | Door     | Rationale / forward-compat note                                                                 | Date       |
 | --- | -------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------- | ---------- |
-| D1  | Multi-tenant from day one via an `Organization` owning all data      | One-way  | Retro-fitting tenancy is the classic SaaS rewrite; cheap to carry now (§5, G1).                 | 2026-06-30 |
-| D2  | Capability-based RBAC; seed roles Member/Manager/Admin               | One-way  | Enables customizable roles later with no enforcement changes (§5, G2).                           | 2026-06-30 |
-| D3  | TypeScript · Next.js · Prisma · SQLite→Postgres · Tailwind/shadcn · Auth.js | Mixed | Stack picked for SaaS ecosystem + newcomer ergonomics; DB/auth chosen as swappable seams (§6). | 2026-06-30 |
-| D4  | Money as integer minor units                                         | One-way  | Changing money representation after data exists is painful and error-prone (§4, G4).            | 2026-06-30 |
-| D5  | Running timer modeled as an open time entry; single-timer as policy  | Two-way  | Simple now; concurrent timers is a later policy relaxation (§3, G6).                             | 2026-06-30 |
-| D6  | POC billing methods: model all four, fully wire per-project + per-task | Two-way | Per-person/flat are additive; no schema lock-in from deferring them (§2).                        | 2026-06-30 |
+| D1  | Multi-tenant from day one via an `Organization` owning all data      | One-way  | Retro-fitting tenancy is the classic SaaS rewrite; cheap to carry now ([access-control](./requirements/access-control.md), G1).                 | 2026-06-30 |
+| D2  | Capability-based RBAC; seed roles Member/Manager/Admin               | One-way  | Enables customizable roles later with no enforcement changes ([access-control](./requirements/access-control.md), G2).                           | 2026-06-30 |
+| D3  | TypeScript · Next.js · Prisma · SQLite→Postgres · Tailwind/shadcn · Auth.js | Mixed | Stack picked for SaaS ecosystem + newcomer ergonomics; DB/auth chosen as swappable seams ([tech & NFR](./requirements/tech-and-nfr.md)). | 2026-06-30 |
+| D4  | Money as integer minor units                                         | One-way  | Changing money representation after data exists is painful and error-prone ([invoicing](./requirements/invoicing.md), G4).            | 2026-06-30 |
+| D5  | Running timer modeled as an open time entry; single-timer as policy  | Two-way  | Simple now; concurrent timers is a later policy relaxation ([time tracking](./requirements/time-tracking.md), G6).                             | 2026-06-30 |
+| D6  | POC billing methods: model all four, fully wire per-project + per-task | Two-way | Per-person/flat are additive; no schema lock-in from deferring them ([data model](./requirements/data-model.md)).                        | 2026-06-30 |
 
 ## When to revisit a guardrail
 
