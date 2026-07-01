@@ -13,7 +13,7 @@ Interview-driven requirements gathering. Each round produces one section below.
 | 3   | Time tracking        | ✅ Done        |
 | 4   | Invoicing            | ✅ Done        |
 | 5   | Users & access       | ✅ Done        |
-| 6   | Non-functional & tech | ⬜ Not started |
+| 6   | Non-functional & tech | ✅ Done        |
 
 ## 1. Framing & scope
 
@@ -200,4 +200,58 @@ Notes on intent:
 - The Member↔Manager line is the main operational split: Members track their own time; Managers additionally invoice and manage work.
 - Whether "Admin" is an orthogonal flag or a top role is left open — because roles become fully customizable, the seed layout is just a starting configuration, not a fixed hierarchy.
 
-<!-- Section 6 added as the interview progresses. -->
+## 6. Non-functional requirements & tech stack
+
+### Chosen stack
+
+| Concern         | Choice                                   | Why                                                                                                             |
+| --------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Language        | **TypeScript** (end-to-end)              | Static types suit an OOP/typedef mindset and catch bugs before runtime; one language across the whole app.      |
+| Framework       | **Next.js** (App Router)                 | Industry-standard SaaS stack; largest ecosystem for auth, multi-tenancy, and polished UI.                       |
+| Database        | **SQLite → Postgres**                    | SQLite is a zero-config local file for the POC; Postgres is the SaaS target. The ORM makes the swap a config change. |
+| ORM             | **Prisma**                               | Schema file reads like strongly-typed typedefs; trivial SQLite↔Postgres switch; generated TS types.             |
+| UI / styling    | **Tailwind CSS + shadcn/ui**             | Accessible, own-your-code components that hit the "looks professional" bar without hand-rolled CSS.             |
+| Auth            | **Auth.js (NextAuth)**                    | A clean boundary so seeded-login-now becomes full-accounts-later by swapping providers, not rewriting.          |
+| PDF             | **HTML→PDF via headless Chromium (Playwright)** | The PDF renders from the *same* styled invoice component as the on-screen view, so they can never drift.  |
+| Money           | **Integer minor units**                  | Avoids floating-point rounding on currency (see §4).                                                            |
+| IDs             | **UUIDs**                                | Non-guessable and safe for multi-tenant / distributed data.                                                     |
+
+### Non-functional requirements
+
+- **Devices:** desktop-first. Design for a desktop browser (how the demo is shown and how time/invoicing work happens); responsive/mobile layouts are deferred.
+- **Browsers:** current evergreen browsers (latest Chrome, Edge, Firefox, Safari). No legacy support.
+- **Performance:** no formal targets for a single-user POC; interactions should feel snappy and the live timer should update smoothly.
+- **Persistence:** data lives in a real database and survives restarts (no in-memory-only state).
+- **Security (POC-level, don't design out):** the seeded account's password is hashed (never plaintext), and **every query is scoped by `organization_id`** so tenant isolation is habitual from day one. Full hardening (rate limiting, CSRF depth, audit logs) is deferred.
+- **Accessibility:** rely on the component library's sensible defaults; not a POC focus area.
+
+### Structure / modularity (per AGENTS.md)
+
+Organize by **feature** (clients, projects, time tracking, invoicing, access) so adding or changing a feature touches a minimal, predictable set of files. Keep the authorization check (`can(user, capability)`) and the org-scoping in **one shared place** each, so the golden rules from §5 are enforced consistently rather than re-implemented per feature.
+
+## POC scope summary (in / out)
+
+A single at-a-glance boundary for the demo milestone. "Modeled" means the data model supports it even though the POC doesn't fully build the UI/flow.
+
+### In scope (built for the demo)
+
+- Single seeded user + login screen, inside one Organization.
+- Clients with invoice-ready details; global reusable Tasks.
+- Projects with billing type (hourly / fixed-fee / non-billable) and billing method (per-project + per-task fully wired).
+- Time tracking: live timer + manual entry, day and weekly views, one running timer.
+- Invoicing: draft from tracked time / fixed fee / manual lines; selectable grouping; finalize→snapshot; polished on-screen + PDF; branding, PO number, tax, discount, mark-as-paid.
+
+### Modeled, not fully built (additive later)
+
+- Multi-user, multi-tenant isolation (Organization + org-scoping exist now).
+- Per-person and flat billing methods.
+- Customizable Discord-style roles (capability system exists; editor UI deferred).
+- Full account management (signup, password reset).
+
+### Explicitly out of scope (POC)
+
+- Email delivery and online payment/collection of invoices.
+- Expenses/reimbursables as a first-class module (manual invoice lines cover the demo).
+- Reporting/analytics dashboards beyond the timesheet views.
+- Automatic time rounding rules, native mobile apps, third-party integrations.
+
