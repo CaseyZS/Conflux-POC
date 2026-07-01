@@ -5,8 +5,8 @@ The single source of "where we are and what's next," so any session can resume w
 ## Snapshot
 
 - **Date:** 2026-07-01
-- **Phase:** Requirements complete + Tier-1/2/3 gap review resolved; pre-implementation (no app code yet).
-- **Git:** `develop` holds merged requirements; the gap-review edits sit on `feature/requirements-gap-review` pending your merge.
+- **Phase:** Requirements + four gap-review passes complete (reviewer concurs — no further gaps); cleared to write the implementation plan. No app code yet.
+- **Git:** `develop` holds the merged first gap review; the three external-review passes sit on `feature/reviewer-gap-pass` (12 commits) pending your merge.
 - **App runnable?** No — nothing scaffolded yet.
 
 ## Done
