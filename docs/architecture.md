@@ -29,13 +29,14 @@ Every change must honor these. Each names the rule, the reason, and the future g
 | G1  | **Every row carries `organization_id`; every query filters by it.**                                | Multi-tenant isolation. Going from one org to many becomes additive instead of a re-key of every table.    |
 | G2  | **Authorization checks capabilities, never role names** (`can(user, "invoice.manage")`).           | Lets roles become fully customizable (Discord-style) later with zero changes to enforcement code.          |
 | G3  | **Authentication sits behind a boundary** (Auth.js). App code asks "who is the current user," not how they logged in. | Seeded-login-now → full accounts (signup, reset, SSO) becomes a provider swap, not a rewrite.       |
-| G4  | **Money is stored as integer minor units** (cents); formatting happens only at display.            | Avoids floating-point rounding on currency — non-negotiable for anything that bills.                       |
+| G4  | **Money is stored as integer minor units**, formatted only at display by one **currency-aware** formatter (no hardcoded ÷100), with a fixed **per-line, half-up** rounding rule. | Avoids floating-point rounding and keeps printed lines summing to the total — non-negotiable for anything that bills. |
 | G5  | **Derive, don't duplicate; snapshot only for immutable records.**                                  | One source of truth for rates/totals. The one licensed copy is invoice finalize (a legal record).          |
 | G6  | **Foreseeably-changing rules live in application policy, not the schema.** (e.g. single running timer). | Relaxing the rule (concurrent timers) is a policy edit, not a data migration.                          |
 | G7  | **Identifiers are UUIDs.**                                                                          | Non-guessable and safe across tenants and distributed/merged data.                                          |
 | G8  | **All DB access goes through the ORM** (Prisma); no raw SQL bound to one engine.                   | Keeps the SQLite (POC) → Postgres (prod) switch a config change.                                            |
 | G9  | **Rendered deliverables have a single source.** The invoice PDF renders from the same component as the on-screen view. | The customer-facing artifact can't silently drift between preview and PDF.                          |
 | G10 | **Authz and org-scoping each live in one shared place**, not re-implemented per feature.            | The golden rules (G1, G2) are enforced consistently; a new feature inherits them by construction.          |
+| G11 | **`User` (global identity) is separate from `Membership` (per-org seat); `organization_id` and roles attach to the Membership, never the global User.** | Keeps the login clean so one person joining multiple orgs later is additive, not a User-table re-key.       |
 
 ## Decision log (lightweight ADRs)
 
@@ -49,6 +50,10 @@ Point-in-time decisions with their rationale, so future sessions can revisit del
 | D4  | Money as integer minor units                                         | One-way  | Changing money representation after data exists is painful and error-prone ([invoicing](./requirements/invoicing.md), G4).            | 2026-06-30 |
 | D5  | Running timer modeled as an open time entry; single-timer as policy  | Two-way  | Simple now; concurrent timers is a later policy relaxation ([time tracking](./requirements/time-tracking.md), G6).                             | 2026-06-30 |
 | D6  | POC billing methods: model all four, fully wire per-project + per-task | Two-way | Per-person/flat are additive; no schema lock-in from deferring them ([data model](./requirements/data-model.md)).                        | 2026-06-30 |
+| D7  | Split `User` (global identity) from `Membership` (per-org seat); roles attach to Membership | One-way | Retro-fitting the split after users exist is a painful re-key; cheap to carry now ([access-control](./requirements/access-control.md), G11).                 | 2026-07-01 |
+| D8  | A Membership holds **multiple** Roles; effective capabilities are their union | One-way | Many-to-many now avoids a later role→roles migration and matches the Discord-style goal (refines D2).                             | 2026-07-01 |
+| D9  | Money rounding = per-line, half-up, then sum; currency-aware formatting, 2-decimal POC | Mixed | Rounding shapes immutable finalized snapshots (one-way); other exponents stay additive (two-way) (refines D4, [invoicing](./requirements/invoicing.md)). | 2026-07-01 |
+| D10 | Clients/Projects/Tasks are org-shared (org-scoped + `created_by` audit); only Time Entries are member-attributed | Two-way | Resolves the "owner" ambiguity toward shared org assets; per-user privacy was never required (clarifies D1, [data model](./requirements/data-model.md)). | 2026-07-01 |
 
 ## When to revisit a guardrail
 

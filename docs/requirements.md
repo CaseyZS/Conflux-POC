@@ -11,7 +11,7 @@ Each requirements topic is its own document. To add a feature, create a new doc 
 | Document                                                    | Covers                                                                    | Status |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
 | _(this index)_                                              | Framing & scope, POC in/out boundary                                      | ✅     |
-| [Data model](./requirements/data-model.md)                  | Clients, Projects, Tasks, billing selectors — the **shared spine**        | ✅     |
+| [Data model](./requirements/data-model.md)                  | Org, identity (User/Membership/Role), Clients, Projects, Tasks, billing selectors — the **shared spine** | ✅     |
 | [Time tracking](./requirements/time-tracking.md)            | Live timer + manual entry, day & weekly timesheet views                   | ✅     |
 | [Invoicing](./requirements/invoicing.md)                    | Invoice sources, grouping, draft→finalize lifecycle, output, fields       | ✅     |
 | [Users & access](./requirements/access-control.md)          | Authentication, multi-tenancy, capability-based RBAC                       | ✅     |
@@ -27,7 +27,7 @@ The POC's job is to **demo the vision to stakeholders** to secure buy-in before 
 
 ### Users & multi-tenancy
 
-The first working version targets a **single user**, but the data model carries a user/owner concept from the start so that multi-user support is an **additive change, not a rewrite**.
+The first working version targets a **single user**, but the data model carries the organization + membership concept from the start so that multi-user support is an **additive change, not a rewrite**.
 
 ### Eventual scale
 
@@ -40,7 +40,7 @@ Undecided between local-only and hosted. The POC is designed to **run locally no
 ### Guiding principles (derived from the above)
 
 - **Polish over robustness.** Because the goal is a stakeholder demo, visible quality (professional-looking invoices, a smooth core click-path) outranks backend edge cases, hardened auth, permissions, and concurrency.
-- **Design for multi-user, build for one.** Every table/entity that will eventually be per-user gets an owner reference now, even while only one user exists.
+- **Design for multi-user, build for one.** Every row is tenant-scoped (`organization_id`) from the start, and genuinely per-person data (time entries) carries a member attribution — so multi-user is additive, not a re-key. (See the [data model](./requirements/data-model.md).)
 - **No local-only lock-in.** Avoid choices that would make later hosting a rewrite.
 
 ## POC scope summary (in / out)

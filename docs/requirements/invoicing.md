@@ -6,13 +6,15 @@ The payoff feature and the heart of the stakeholder demo: turning tracked work i
 
 ## What feeds an invoice (all three, mixable on one invoice)
 
-- **Tracked billable time** — unbilled billable hours for a project become line items (hours × rate).
-- **Fixed-fee amount** — a project's flat fee as a single line, independent of hours.
-- **Manual line items** — free-form lines the user adds (reimbursables, ad-hoc charges, etc.).
+An invoice bills **one Client** and may draw from **one or more of that client's Projects** (the bill-to comes from the Client record). Three kinds of source line, mixable on the same invoice:
+
+- **Tracked billable time** — unbilled billable hours for the client's hourly projects become line items (hours × rate). Finalizing **links** those entries to the invoice so they can't be billed again.
+- **Fixed-fee amount** — a fixed-fee project's flat fee as a single line, independent of hours. It is billable **once**: finalizing links the fee to the invoice the same way, so a second invoice won't offer it again. (Milestone/installment billing of a fee is out of scope for the POC.)
+- **Manual line items** — free-form lines the user adds (reimbursables, ad-hoc charges, etc.). These belong to the invoice itself, so there's no double-bill concern.
 
 ## Line grouping — chosen per invoice
 
-When creating an invoice from tracked time, the user picks how to itemize. All four are computed from the same underlying billable entries — grouping is a presentation choice, not stored duplication:
+When creating an invoice from tracked time, the user picks how to itemize. All four are computed from the same underlying billable entries — grouping is a presentation choice, not stored duplication. (When an invoice spans several of the client's projects, whether lines are also sectioned per project is a display detail, not a data one — a two-way door.)
 
 - **By task** — one line per task (`Design — 12h × $150`). The clean default.
 - **By person** — one line per team member (meaningful once multi-user exists).
@@ -21,11 +23,13 @@ When creating an invoice from tracked time, the user picks how to itemize. All f
 
 ## Lifecycle: draft → finalized → sent → paid
 
-- **Draft** — reads **live** from currently unbilled billable time; edit freely, choose grouping, add manual lines.
-- **Finalize** — the numbers **snapshot** onto the invoice (line items, rates, amounts), an **invoice number** is assigned, and the billed time entries are **linked to this invoice** so they can never be invoiced twice. The finalized invoice is immutable: later edits to a project's rate do not change it. (This is the "derive until finalized, then snapshot" rule from the [data model](./data-model.md), realized.)
+- **Draft** — reads **live** from currently unbilled billable time; edit freely, choose grouping, add manual lines. A draft **stores its choices** (client, the projects/fees included, grouping, manual lines, discount, tax, PO number, dates, footer) but **not** the computed time line items — those stay derived from the live entries until finalize.
+- **Finalize** — the numbers **snapshot** onto the invoice (line items, rates, amounts, **and currency**), an **invoice number** is assigned, and the billed time entries — plus any fixed fee — are **linked to this invoice** so they can never be invoiced twice. The invoice number is a **gapless per-organization sequence** (the Organization holds the prefix + next value), assigned only at finalize. The finalized invoice is immutable: later edits to a project's rate do not change it. (This is the "derive until finalized, then snapshot" rule from the [data model](./data-model.md), realized.)
 - **Sent / Paid** — manual status flags (`draft` → `sent` → `paid`). No payment processing or gateway in the POC; "mark as paid" is a human action.
 
 The "billed" state of a time entry is real state (a link to the invoice that billed it), justified because it prevents double-billing — this is a deliberate stored value, not a convenience copy.
+
+**No void/credit path in the POC.** A finalized invoice can't be edited, voided, or credited yet — and because finalizing links time entries (and fees) to it, there's deliberately no way to _release_ them for re-billing. That correction flow (void → unlink, or issue a credit note) is a known deferral, called out here so the immutability rule isn't mistaken for completeness.
 
 ## Output
 
@@ -35,12 +39,14 @@ A **polished on-screen invoice** in the browser, plus **PDF download / print**. 
 
 - **Header / branding** — company logo, business name, and "from" details.
 - **Bill-to** — client name, contact, address, pulled from the Client record.
-- **Reference block** — auto invoice number, issue date, due date, payment terms, and the **client PO number**.
+- **Reference block** — the auto invoice number (see finalize), issue date, **payment terms and a due date derived from them** (terms pre-filled from the Organization default), and the **client PO number**.
 - **Line items** — per the chosen grouping.
-- **Money block** — subtotal, optional **discount** (percent or flat), optional **tax** (percent applied to subtotal after discount), total.
+- **Money block** — subtotal, optional **discount** (percent or flat), a single optional **tax** (percent applied to subtotal after discount; compound/multiple taxes are out of scope), total. Every step rounds **per line, half-up, then sums** (see below), so the printed figures always add up.
 - **Footer** — notes / terms.
 - **Currency** — taken from the client record.
 
 ## Money-handling assumption (a "why" worth stating)
 
-Monetary amounts are stored as **integer minor units** (e.g. cents), not floating-point, to avoid rounding errors like `0.1 + 0.2 ≠ 0.3`. Formatting to `$1,800.00` happens only at display time. (In LabVIEW terms: keep the wire an integer of pennies; convert to a formatted string only at the indicator.)
+Monetary amounts are stored as **integer minor units** (e.g. cents), not floating-point, to avoid rounding errors like `0.1 + 0.2 ≠ 0.3`. Formatting to `$1,800.00` happens only at display time, through **one central formatter** that takes the currency (never a hardcoded `÷100`). The POC targets 2-decimal currencies but stores nothing that blocks other exponents (JPY has 0, some have 3) later. (In LabVIEW terms: keep the wire an integer of pennies; convert to a formatted string only at the indicator.)
+
+**Rounding rule.** When math yields fractional minor units (an odd rate, or `8.25%` tax), round **each line item to the currency's minor unit, half-up (away from zero)**, then make the subtotal the sum of the rounded lines; apply the discount, then the tax, rounding each the same way. This keeps the visible line items summing exactly to the total — the whole point of storing integer minor units.

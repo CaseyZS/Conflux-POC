@@ -6,11 +6,22 @@ This document defines the core entities and how they relate. Everything else (ti
 
 ## Entities
 
-- **Client** — the company being billed. Fields: name, contact person, email, billing address, currency. Owns projects.
-- **Project** — a body of work for one client. Fields: name, `billing type`, `billing method` (when hourly), rate/fee fields (see below), status (active/archived). Belongs to a client. Owns its task assignments.
-- **Task** — a reusable, company-wide kind of work (e.g. Design, Development, Meeting, Admin). Maintained as one global list and assigned to projects. Fields: name, default billable flag, active flag.
+- **Organization** — the tenant and top-level owner of all data (see [access-control](./access-control.md)). Fields: business name, logo, a free-text "from" block (address + contact email/phone) for invoice headers, plus org-wide defaults that pre-fill new records — default currency, default tax rate, default payment terms, invoice footer/notes, and the invoice-number prefix + next sequence value. Its own Conflux subscription/billing is a later addition (the `billing.account` capability seam), not fields now.
+- **User (identity)** — a login: email, password hash, display name. Global and **not** org-scoped; authentication sits behind Auth.js (guardrail G3). A User is _who you are_, independent of any company.
+- **Membership** — a User's seat in one Organization: the org-scoped record that carries the person's roles and (later) their per-person billing rate. _This_ is what owns time entries and is recorded as `created_by`. Splitting identity (User) from membership lets one person join multiple orgs later without a rewrite.
+- **Role** — a named set of capabilities, stored per Organization. A Membership holds **one or more** Roles and its effective capabilities are the **union** (Discord-style). Roles are data, not code — see [access-control](./access-control.md).
+- **Client** — the company being billed. Fields: name, contact person, email, billing address (free-text block), currency, status (active/archived). Org-owned. Owns projects.
+- **Project** — a body of work for one client. Fields: name, `billing type`, `billing method` (only when hourly), `hourly rate` (used when hourly + per-project), `fixed fee` amount (used when fixed-fee), status (active/archived). Currency is inherited from the client, not stored again. Belongs to a client; owns its task assignments.
+- **Task** — a reusable, company-wide kind of work (e.g. Design, Development, Meeting, Admin). Maintained as one global list per Organization and assigned to projects. Fields: name, default billable flag, active flag.
 - **Project ↔ Task assignment** — the join that says "this task is available on this project." Carries the per-project details: billable flag (overrides the task default) and, when the project's billing method is per-task, the task's rate on this project.
-- **User** — the owner of the data. Single user for now; every entity above carries an owner reference so multi-user is additive. Will later carry a per-person rate (for the per-person billing method).
+
+## Ownership & scoping (what "owner" means)
+
+The word "owner" was doing two jobs; keep three ideas separate:
+
+- **Tenant isolation** — every row carries `organization_id` and every query filters by it (guardrail G1). This is what "the Organization owns all data" means.
+- **Audit** — Clients, Projects, and Tasks also record a `created_by` Membership, purely for "who added this." They are **org-shared**: visible org-wide and editable by capability (`client.manage`, `project.manage`), never private to their creator.
+- **Attribution** — only **Time Entries** are tied to a specific Membership as their subject, which is what makes "show me _my_ hours" and the `time.view.all` capability meaningful.
 
 ## Project billing: two independent selectors
 
@@ -30,14 +41,21 @@ Mirrors Harvest. A project chooses **how it is billed overall** and, when hourly
 
 ```mermaid
 erDiagram
-    USER ||--o{ CLIENT : owns
+    ORGANIZATION ||--o{ MEMBERSHIP : has
+    ORGANIZATION ||--o{ CLIENT : owns
+    ORGANIZATION ||--o{ TASK : owns
+    ORGANIZATION ||--o{ ROLE : defines
+    USER ||--o{ MEMBERSHIP : "is identity for"
+    MEMBERSHIP }o--o{ ROLE : granted
     CLIENT ||--o{ PROJECT : "billed for"
     PROJECT ||--o{ PROJECT_TASK : offers
     TASK ||--o{ PROJECT_TASK : "assigned via"
     PROJECT_TASK ||--o{ TIME_ENTRY : "logged against"
-    USER ||--o{ TIME_ENTRY : records
+    MEMBERSHIP ||--o{ TIME_ENTRY : records
 ```
 
 ## Rate storage: derive, don't duplicate (until finalized)
 
 The rate that applies to a given hour is **derived** from the project's billing method at read time — it is not copied onto every time entry. The one deliberate exception is invoicing: when an invoice is **finalized**, the rates and amounts are **snapshotted onto the invoice**, because a sent invoice is an immutable financial record that must not change if a project's rate is edited later. That stored copy is justified by a real need (historical accuracy), not convenience. Detail lives in [Invoicing](./invoicing.md).
+
+The same rule governs **currency**: it is **derived from the client**, never copied as a per-row currency column (the duplication trigger A warns about), and one central formatter turns integer minor units into `$1,800.00` only at display. Currency joins the rates and amounts in the finalize **snapshot**, so a finalized invoice keeps its original currency even if the client's is later changed. The POC stores 2-decimal minor units but assumes nothing that blocks other exponents (e.g. JPY, BHD) later — guardrail G4.
