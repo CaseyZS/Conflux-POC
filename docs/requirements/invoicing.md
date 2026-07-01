@@ -28,7 +28,7 @@ Independent of the grouping, the user can toggle which per-entry fields appear o
 ## Lifecycle: draft → finalized → sent → paid
 
 - **Draft** — reads **live** from currently unbilled billable time; edit freely, choose grouping, add manual lines. A draft **stores its choices** (client, the projects/fees included, grouping, manual lines, discount, tax, PO number, dates, footer) but **not** the computed time line items — those stay derived from the live entries until finalize. _Planned (not in the POC):_ scope the pull to a **period** — month, quarter, or a custom cutoff — instead of all unbilled time; a purely additive filter, since "unbilled" already excludes prior-invoice entries.
-- **Finalize** — the numbers **snapshot** onto the invoice (line items, rates, amounts, **and currency**), an **invoice number** is assigned, and the billed time entries — plus any fixed fee — are **linked to this invoice** so they can never be invoiced twice. The invoice number is a **gapless per-organization sequence** (the Organization holds the prefix + next value), assigned only at finalize. The finalized invoice is immutable: later edits to a project's rate do not change it. (This is the "derive until finalized, then snapshot" rule from the [data model](./data-model.md), realized.)
+- **Finalize** — the numbers **snapshot** onto the invoice (line items, rates, amounts, **currency**, and the frozen **bill-to** and **from/branding** blocks), an **invoice number** is assigned, and the billed time entries — plus any fixed fee — are **linked to this invoice** so they can never be invoiced twice. The invoice number is a **gapless per-organization sequence** (the Organization holds the prefix + next value), assigned only at finalize. The finalized invoice is immutable: later edits to a project's rate — or to the client's address or the company's branding — do not change it. (This is the "derive until finalized, then snapshot" rule from the [data model](./data-model.md), realized.)
 - **Sent / Paid** — manual status flags (`draft` → `sent` → `paid`). No payment processing or gateway in the POC; "mark as paid" is a human action.
 
 The "billed" state of a time entry is real state (a link to the invoice that billed it), justified because it prevents double-billing — this is a deliberate stored value, not a convenience copy. Because this link is set only at **finalize**, deleting a **draft** removes just the draft and its manual lines — no entries were ever reserved, so none need releasing back to the unbilled pool.
@@ -41,9 +41,9 @@ A **polished on-screen invoice** in the browser, plus **PDF download / print**. 
 
 ## Invoice fields
 
-- **Header / branding** — company logo, business name, and "from" details.
-- **Bill-to** — client name, contact, address, pulled from the Client record.
-- **Reference block** — the auto invoice number (see finalize), issue date, **payment terms and a due date derived from them** (terms pre-filled from the Organization default), and the **client PO number**.
+- **Header / branding** — company logo, business name, and "from" details, from the Organization; likewise **snapshotted at finalize** (logo by reference).
+- **Bill-to** — client name, contact, address; pulled live from the Client record on a draft, then **snapshotted at finalize** so a later client-address change can't rewrite a sent invoice (G5).
+- **Reference block** — the auto invoice number (see finalize), issue date, **payment terms and a due date derived from them** (terms pre-filled from the Organization default; the **due date is user-overridable** on the draft), and the **client PO number**.
 - **Line items** — per the chosen grouping.
 - **Money block** — subtotal, optional **discount** (percent or flat), a single optional **tax** (percent applied to subtotal after discount; compound/multiple taxes are out of scope), total. Every step rounds **per line, half-up, then sums** (see below), so the printed figures always add up.
 - **Footer** — notes / terms.
