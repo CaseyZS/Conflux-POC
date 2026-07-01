@@ -37,6 +37,7 @@ Every change must honor these. Each names the rule, the reason, and the future g
 | G9  | **Rendered deliverables have a single source.** The invoice PDF renders from the same component as the on-screen view. | The customer-facing artifact can't silently drift between preview and PDF.                          |
 | G10 | **Authz and org-scoping each live in one shared place**, not re-implemented per feature.            | The golden rules (G1, G2) are enforced consistently; a new feature inherits them by construction.          |
 | G11 | **`User` (global identity) is separate from `Membership` (per-org seat); `organization_id` and roles attach to the Membership, never the global User.** | Keeps the login clean so one person joining multiple orgs later is additive, not a User-table re-key.       |
+| G12 | **Financial/historic records are archived, never hard-deleted** — FKs from time entries and invoices use `Restrict` not `Cascade`; entities with history retire via `status`/`active` flags. | Protects billing history and finalized invoices from a stray cascade; a delete can never corrupt the financial record. |
 
 ## Decision log (lightweight ADRs)
 
