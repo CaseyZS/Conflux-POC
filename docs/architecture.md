@@ -54,6 +54,7 @@ Point-in-time decisions with their rationale, so future sessions can revisit del
 | D8  | A Membership holds **multiple** Roles; effective capabilities are their union | One-way | Many-to-many now avoids a later role→roles migration and matches the Discord-style goal (refines D2).                             | 2026-07-01 |
 | D9  | Money rounding = per-line, half-up, then sum; currency-aware formatting, 2-decimal POC | Mixed | Rounding shapes immutable finalized snapshots (one-way); other exponents stay additive (two-way) (refines D4, [invoicing](./requirements/invoicing.md)). | 2026-07-01 |
 | D10 | Clients/Projects/Tasks are org-shared (org-scoped + `created_by` audit); only Time Entries are member-attributed | Two-way | Resolves the "owner" ambiguity toward shared org assets; per-user privacy was never required (clarifies D1, [data model](./requirements/data-model.md)). | 2026-07-01 |
+| D11 | Time-entry day stored as date-only `YYYY-MM-DD` from the user's local calendar | One-way | Sidesteps UTC-rollover and is correct across timezones without migration; a separate timestamp drives live elapsed ([time tracking](./requirements/time-tracking.md)). | 2026-07-01 |
 
 ## When to revisit a guardrail
 
