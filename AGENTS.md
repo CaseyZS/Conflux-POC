@@ -8,6 +8,14 @@ Shared working conventions for any coding agent contributing to this repository.
 - Keep entries short. Link out to `doc/` for long-form content.
 - Date significant additions: `(YYYY-MM-DD)`.
 
+## Key project docs
+
+Start here each session; these persist state so we don't rely on memory or chat history.
+
+- `docs/status.md` — where we are and what's next. **Read first** to resume; update at end of session.
+- `docs/requirements.md` — what we're building (features, data model).
+- `docs/architecture.md` — architectural guardrails + decision log. **Read before making or changing an architectural decision.**
+
 ## Git workflow
 
 - Use **gitflow** branching: cut `feature/`, `release/`, or `hotfix/` branches off `develop`. Never commit directly to `develop` or `main` — branch first.
@@ -64,4 +72,4 @@ When the user signals end of session ("done for today", "good stopping point", e
 
 - **Confirm git state** — current branch and whether the tree is clean; surface anything uncommitted or unmerged.
 - **Make docs reflect reality** — Progress tables, `CHANGELOG.md`, and any design docs touched this session. Because we commit as we go, these are often already current — commit only if something actually changed (don't manufacture an empty commit).
-- **Record what's next** — current phase, what's working on hardware, and the next step, wherever session continuity is tracked. Then summarize the stopping point for the user.
+- **Record what's next** — update `docs/status.md` (the session-continuity file): current phase, what's working, and the next step. Then summarize the stopping point for the user.
