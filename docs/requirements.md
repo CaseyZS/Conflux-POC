@@ -10,7 +10,7 @@ Interview-driven requirements gathering. Each round produces one section below.
 | --- | -------------------- | -------------- |
 | 1   | Framing & scope      | ✅ Done        |
 | 2   | Clients & projects   | ✅ Done        |
-| 3   | Time tracking        | ⬜ Not started |
+| 3   | Time tracking        | ✅ Done        |
 | 4   | Invoicing            | ⬜ Not started |
 | 5   | Users & access       | ⬜ Not started |
 | 6   | Non-functional & tech | ⬜ Not started |
@@ -81,4 +81,37 @@ erDiagram
 
 The rate that applies to a given hour is **derived** from the project's billing method at read time — it is not copied onto every time entry. The one deliberate exception is invoicing: when an invoice is **finalized**, the rates and amounts are **snapshotted onto the invoice**, because a sent invoice is an immutable financial record that must not change if a project's rate is edited later. That stored copy is justified by a real need (historical accuracy), not convenience. Detail lives in the Invoicing section.
 
-<!-- Sections 3–6 added as the interview progresses. -->
+## 3. Time tracking
+
+The daily-use feature. Design goal: minimal friction to log an hour, because that is what makes or breaks adoption.
+
+### The time entry, and what a "running timer" really is
+
+A **time entry** captures: date, the project↔task assignment it belongs to, a duration, a free-text note, and its owner. A running timer is not a separate concept — it is a time entry in an **open** state:
+
+- **Running (open):** the entry keeps a start timestamp so the UI can show elapsed time counting up live. This timestamp is timer plumbing, not a user-facing audit record.
+- **Stopped (closed):** on stop, elapsed time collapses into a plain stored **duration**; the start timestamp is no longer needed. Manual entries are created closed, with the duration typed directly.
+
+This means "live tracking" and "manual entry" are the same entity in two states, not two systems.
+
+### Ways to log time (both supported)
+
+- **Live timer** — start/stop for real-time work; the headline demo feature.
+- **Manual entry** — type project, task, hours, and a note after the fact, for forgotten or estimated time.
+
+### Timesheet views (both supported)
+
+- **Day view** — one day's entries as an editable list, navigate day to day. The default, fast to read.
+- **Weekly grid** — a projects×days grid for the week, good for reviewing and bulk entry.
+
+### Single running timer — a policy, not a schema constraint
+
+The POC enforces **at most one running timer** per user (starting a new one stops the current one), matching Harvest and preventing accidental double-billing. This rule is enforced in the **application/business layer**, deliberately **not** as a database uniqueness constraint — so switching to multiple concurrent timers later is a policy change, not a data migration. ("Design for multi-user, build for one" applied to timer concurrency.)
+
+### Assumptions (sensible defaults, revisit if wrong)
+
+- Time entries are **editable and deletable** after creation.
+- Duration is stored at fine precision and **displayed as decimal hours** (e.g. `1.5h`); `h:mm` display can be added later.
+- **No automatic rounding rules** in the POC (Harvest has configurable rounding; deferred).
+
+<!-- Sections 4–6 added as the interview progresses. -->
