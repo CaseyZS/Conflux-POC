@@ -8,15 +8,15 @@ This document defines the core entities and how they relate — including how ti
 
 - **Organization** — the tenant and top-level owner of all data (see [access-control](./access-control.md)). Fields: business name, logo, a free-text "from" block (address + contact email/phone) for invoice headers, plus org-wide defaults that pre-fill new records — default currency, default tax rate, default payment terms, invoice footer/notes, and the invoice-number prefix + next sequence value. Its own Conflux subscription/billing is a later addition (the `billing.account` capability seam), not fields now.
 - **User (identity)** — a login: email, password hash, display name. Global and **not** org-scoped; authentication sits behind Auth.js (guardrail G3). A User is _who you are_, independent of any company.
-- **Membership** — a User's seat in one Organization: the org-scoped record that carries the person's roles and (later) their per-person billing rate. _This_ is what owns time entries and is recorded as `created_by`. Splitting identity (User) from membership lets one person join multiple orgs later without a rewrite.
+- **Membership** — a User's seat in one Organization: the org-scoped record that carries the person's roles, an `active` flag (deactivate the seat to revoke access without deleting history — G12), and (later) their per-person billing rate. _This_ is what owns time entries and is recorded as `created_by`. Splitting identity (User) from membership lets one person join multiple orgs later without a rewrite.
 - **Role** — a named set of capabilities, stored per Organization. A Membership holds **one or more** Roles and its effective capabilities are the **union** (Discord-style). Roles are data, not code — see [access-control](./access-control.md).
 - **Client** — the company being billed. Fields: name, contact person, email, billing address (free-text block), currency, status (active/archived). Org-owned. Owns projects.
 - **Project** — a body of work for one client. Fields: name, `billing type`, `billing method` (only when hourly), `hourly rate` (used when hourly + per-project), `fixed fee` amount + nullable `fixed_fee_invoice_id` (the fee's anti-double-bill link, set at finalize), status (active/archived). Currency is inherited from the client, not stored again. Belongs to a client; owns its task assignments.
 - **Task** — a reusable, company-wide kind of work (e.g. Design, Development, Meeting, Admin). Maintained as one global list per Organization and assigned to projects. Fields: name, default billable flag, active flag.
 - **Project ↔ Task assignment** — the join that says "this task is available on this project." Carries the per-project details: an `active` flag (retire the task from this project's picker without touching historic entries), the billable flag (overrides the task default), and — when the project's billing method is per-task — the task's rate on this project.
 - **Time entry** — a logged span of work, attributed to the **Membership** that recorded it. Fields: date (date-only), the Project↔Task assignment, duration (integer seconds), note, and a nullable `invoice_id` (set when billed — the anti-double-bill link). Full behavior in [time tracking](./time-tracking.md).
-- **Invoice** — a bill to one **Client** (org-scoped). Fields: status (`draft` → `sent` → `paid`), invoice number (assigned at finalize), issue date, due date, payment terms, PO number, discount, tax, footer, and — snapshotted at finalize — the **currency** and money totals. Has many `InvoiceLine`s. Full lifecycle in [invoicing](./invoicing.md).
-- **Invoice line** — one line on an invoice. Fields: `source` (tracked-time / fixed-fee / manual), a snapshot **description**, quantity (hours or 1), unit rate, and amount. Time and fixed-fee lines are written as an immutable snapshot at finalize; manual lines exist from the draft.
+- **Invoice** — a bill to one **Client** (org-scoped). Fields: status (`draft` → `sent` → `paid`), invoice number (assigned at finalize), issue date, due date (defaults to issue + terms, **user-overridable**), payment terms, PO number, discount, tax, footer, and — snapshotted at finalize — the **currency**, money totals, and frozen **bill-to** (client name/contact/address) and **from/branding** (org name/address/contact; logo by reference) blocks. Has many `InvoiceLine`s. Full lifecycle in [invoicing](./invoicing.md).
+- **Invoice line** — one line on an invoice. Fields: `source` (tracked-time / fixed-fee / manual), a snapshot **description**, quantity (hours or 1), unit rate, amount, and an optional `project_id` (set on **manual** lines so ad-hoc charges attribute to a project for later reporting — captured at entry, since finalized invoices can't be backfilled). Time and fixed-fee lines are written as an immutable snapshot at finalize; manual lines exist from the draft.
 
 ## Ownership & scoping (what "owner" means)
 
@@ -68,6 +68,7 @@ erDiagram
     INVOICE ||--o{ INVOICE_LINE : contains
     INVOICE ||--o{ TIME_ENTRY : "bills (nullable)"
     INVOICE ||--o{ PROJECT : "bills fee (nullable)"
+    PROJECT ||--o{ INVOICE_LINE : "manual line (nullable)"
 ```
 
 ## Rate storage: derive, don't duplicate (until finalized)

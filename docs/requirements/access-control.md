@@ -9,6 +9,7 @@ Almost none of this is *built* in the single-user POC, but the *shape* is decide
 - **POC:** a real-looking login screen backed by **one seeded account** (no self-signup). Enough to exercise the "current user" plumbing and look like a product in the demo.
 - **Target:** full account management — self-signup, password reset, sessions. The POC's auth is built behind a boundary so this is a swap-in, not a teardown.
 - **Identity vs. membership:** a **User** is the global login (credentials, behind Auth.js); a **Membership** is that user's seat in one Organization and carries their roles. The POC seeds one User with one Membership in one Organization, so letting a User belong to several orgs later is additive. (See the [data model](./data-model.md).)
+- **Deactivating a seat:** a Membership carries an `active` flag; authentication and authorization **deny an inactive Membership**, so a company can revoke someone's access (e.g. a departed contractor) without deleting their time history — which G12 forbids anyway. Reactivating restores access.
 
 ## Tenancy: multi-tenant SaaS
 
