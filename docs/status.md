@@ -15,6 +15,7 @@ The single source of "where we are and what's next," so any session can resume w
 - Full requirements interview captured in `docs/requirements.md` — 6 sections + in/out scope summary.
 - Architecture guardrails and decision log established (`docs/architecture.md`).
 - This status/continuity file created.
+- `AGENTS.md` conventions extended: one-way/two-way door test (design-check trigger C), decision-log upkeep rule, forward-compat working-style bullet. `.gitattributes` added to normalize line endings.
 
 ## In progress
 
