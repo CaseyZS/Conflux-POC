@@ -18,10 +18,11 @@ The single source of "where we are and what's next," so any session can resume w
 - `AGENTS.md` conventions extended: one-way/two-way door test (design-check trigger C), decision-log upkeep rule, forward-compat working-style bullet. `.gitattributes` added to normalize line endings.
 - Requirements split into an index (`docs/requirements.md`) + per-topic docs under `docs/requirements/` (data model, time tracking, invoicing, access-control, tech-and-nfr); cross-references in `architecture.md` updated.
 - Requirements **gap review** completed: Tier-1 one-way doors resolved via interview (identity/membership split, multi-role union, org-shared ownership, Organization fields, currency + rounding) and Tier-2/3 clarifications folded into the requirements docs; decision log updated (D7–D10, G4 refresh, new G11).
+- **Second gap pass** (external review) resolved: defer field-level rate stripping (record `rate.view` capability + G2/G10 seam), plan period-based invoice selection (month/quarter/custom, not built), and store time-entry dates as date-only/browser-local (decision D11).
 
 ## In progress
 
-- Gap-review edits committed on `feature/requirements-gap-review`, ready for your review/merge to `develop`. The Tier-2/3 items were applied using recommended defaults (invoice numbering, fixed-fee anti-double-bill, DB-stored logo, single timezone) — worth a skim in case any should change.
+- Gap-review edits committed on `feature/requirements-gap-review`, ready for your review/merge to `develop`. Covers the interview-resolved Tier-1 doors, the Tier-2/3 defaults (invoice numbering, fixed-fee anti-double-bill, DB-stored logo), and a second external-review pass (defer rate-stripping behind `rate.view`; invoice period-selection planned; date-only browser-local entry dates).
 
 ## Next up (ordered)
 
