@@ -6,7 +6,7 @@ The daily-use feature. Design goal: minimal friction to log an hour, because tha
 
 ## The time entry, and what a "running timer" really is
 
-A **time entry** captures: date, the project↔task assignment it belongs to, a duration, a free-text note, and its owner. A running timer is not a separate concept — it is a time entry in an **open** state:
+A **time entry** captures: date, the project↔task assignment it belongs to, a duration, a free-text note, and the **member** (user-in-org) who logged it. A running timer is not a separate concept — it is a time entry in an **open** state:
 
 - **Running (open):** the entry keeps a start timestamp so the UI can show elapsed time counting up live. This timestamp is timer plumbing, not a user-facing audit record.
 - **Stopped (closed):** on stop, elapsed time collapses into a plain stored **duration**; the start timestamp is no longer needed. Manual entries are created closed, with the duration typed directly.
@@ -30,5 +30,7 @@ The POC enforces **at most one running timer** per user (starting a new one stop
 ## Assumptions (sensible defaults, revisit if wrong)
 
 - Time entries are **editable and deletable** after creation.
-- Duration is stored at fine precision and **displayed as decimal hours** (e.g. `1.5h`); `h:mm` display can be added later.
+- Duration is stored as **integer seconds** (fine precision, mirroring the money-as-integer discipline) and **displayed as decimal hours** (e.g. `1.5h`); `h:mm` display can be added later.
 - **No automatic rounding rules** in the POC (Harvest has configurable rounding; deferred).
+- **Single timezone.** The POC assumes one timezone (the organization's, effectively the server's); an entry's **date** is the calendar date in that zone, and a timer running past midnight is recorded against its **start** date. Per-user timezones are a hosted-multi-user concern, deferred.
+- **Billability is derived, not per-entry.** Whether an entry is billable comes from its project↔task assignment (which overrides the task default), not a flag typed on each entry. A per-entry override (as Harvest allows) is an additive change later.
