@@ -17,9 +17,13 @@ An invoice bills **one Client** and may draw from **one or more of that client's
 When creating an invoice from tracked time, the user picks how to itemize. All four are computed from the same underlying billable entries — grouping is a presentation choice, not stored duplication. (When an invoice spans several of the client's projects, whether lines are also sectioned per project is a display detail, not a data one — a two-way door.)
 
 - **By task** — one line per task (`Design — 12h × $150`). The clean default.
-- **By person** — one line per team member (meaningful once multi-user exists).
+- **By person** — one line per team member, **split by rate** where a person logged at more than one rate (e.g. `Bob (Design) — 5h × $150`, `Bob (Admin) — 5h × $75`); every line always carries a single rate. Meaningful once multi-user exists.
 - **Summary** — a single lump-sum "Services rendered" line.
 - **Detailed** — one line per time entry, notes included.
+
+## Optional line-item detail
+
+Independent of the grouping, the user can toggle which per-entry fields appear on the line items — **date, person, task, and note** — the way Harvest exposes detail columns. Like grouping, these are **derived** from the same billable entries (a presentation choice, not stored duplication), so showing them is additive and changes nothing about what's stored; at finalize the shown detail is captured in the line snapshot. Most useful with the **Detailed** grouping, but the toggles can annotate any grouping.
 
 ## Lifecycle: draft → finalized → sent → paid
 
@@ -27,7 +31,7 @@ When creating an invoice from tracked time, the user picks how to itemize. All f
 - **Finalize** — the numbers **snapshot** onto the invoice (line items, rates, amounts, **and currency**), an **invoice number** is assigned, and the billed time entries — plus any fixed fee — are **linked to this invoice** so they can never be invoiced twice. The invoice number is a **gapless per-organization sequence** (the Organization holds the prefix + next value), assigned only at finalize. The finalized invoice is immutable: later edits to a project's rate do not change it. (This is the "derive until finalized, then snapshot" rule from the [data model](./data-model.md), realized.)
 - **Sent / Paid** — manual status flags (`draft` → `sent` → `paid`). No payment processing or gateway in the POC; "mark as paid" is a human action.
 
-The "billed" state of a time entry is real state (a link to the invoice that billed it), justified because it prevents double-billing — this is a deliberate stored value, not a convenience copy.
+The "billed" state of a time entry is real state (a link to the invoice that billed it), justified because it prevents double-billing — this is a deliberate stored value, not a convenience copy. Because this link is set only at **finalize**, deleting a **draft** removes just the draft and its manual lines — no entries were ever reserved, so none need releasing back to the unbilled pool.
 
 **No void/credit path in the POC.** A finalized invoice can't be edited, voided, or credited yet — and because finalizing links time entries (and fees) to it, there's deliberately no way to _release_ them for re-billing. That correction flow (void → unlink, or issue a credit note) is a known deferral, called out here so the immutability rule isn't mistaken for completeness.
 
