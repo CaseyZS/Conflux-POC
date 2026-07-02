@@ -8,7 +8,7 @@ Updated as milestones land; this is the table that persists build state across s
 
 | Milestone | Deliverable (one line)                                                                 | Status         |
 | --------- | -------------------------------------------------------------------------------------- | -------------- |
-| M0        | Scaffolded app boots: Next.js + TS + Prisma/SQLite + Tailwind/shadcn + Auth.js, schema migrated, seed runs | ⬜ Not started |
+| M0        | Scaffolded app boots: Next.js + TS + Prisma/SQLite + Tailwind/shadcn + Auth.js, schema migrated, seed runs | 🔨 In progress (2026-07-02; segment checklist in [status.md](./status.md)) |
 | M1        | First vertical slice: seeded login → create a client → list clients (proves G1/G3/G10 end-to-end) | ⬜ Not started |
 | M2        | Projects & tasks: project CRUD with billing type/method, global task list, project↔task assignment | ⬜ Not started |
 | M3        | Time tracking: live timer + manual entry, day + weekly views, single-timer policy       | ⬜ Not started |

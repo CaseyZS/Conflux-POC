@@ -4,10 +4,10 @@ The single source of "where we are and what's next," so any session can resume w
 
 ## Snapshot
 
-- **Date:** 2026-07-01
-- **Phase:** Implementation plan complete (`docs/plan.md`) — full Prisma schema, shared foundations, milestones M0–M5 with exit criteria. Ready to scaffold (M0). No app code yet.
-- **Git:** `develop` holds requirements + all gap reviews (merged). The plan sits on `feature/implementation-plan` (8 commits) pending your review/merge.
-- **App runnable?** No — nothing scaffolded yet.
+- **Date:** 2026-07-02
+- **Phase:** Building **M0 — Scaffold** on `feature/m0-scaffold` (see the segment checklist under "In progress").
+- **Git:** `develop` holds requirements + the implementation plan (all merged). Working branch: `feature/m0-scaffold`.
+- **App runnable?** Not yet — scaffold in progress.
 
 ## Done
 
@@ -23,13 +23,19 @@ The single source of "where we are and what's next," so any session can resume w
 
 ## In progress
 
-- `feature/implementation-plan` (8 commits) awaiting your review/merge into `develop`: the plan doc built in six committed segments, plus the D13/D14 log entries and the data-model addition.
+**M0 — Scaffold** on `feature/m0-scaffold`, built in committed segments (one green commit each) so any session can resume from the last tick. Details per segment live in `docs/plan.md` § M0.
+
+- [x] **Seg 0** — branch + this checklist + status refresh
+- [ ] **Seg 1** — Next.js scaffold (TS, App Router, Tailwind, `src/`) + ESLint/Prettier + npm scripts
+- [ ] **Seg 2** — Prisma + SQLite: full 15-model schema, first migration, `db.ts`
+- [ ] **Seg 3** — Seed v0: org, admin User/Membership, three roles + capability rows
+- [ ] **Seg 4** — Auth.js v5 skeleton: Credentials + bcrypt; login works (unstyled)
+- [ ] **Seg 5** — Vitest + shadcn/ui init + placeholder test; verify M0 exit criteria
 
 ## Next up (ordered)
 
-1. **Merge** `feature/implementation-plan` into `develop` (human step).
-2. **M0 — Scaffold** per `docs/plan.md`: Next.js + TS + Prisma/SQLite (schema migrated) + Tailwind/shadcn + Auth.js + Vitest/ESLint/Prettier, seed v0. Exit: dev server boots, migrate + seed run clean, tests green.
-3. **M1 — First vertical slice:** seeded login → create a client → list clients, proving G1/G2/G3/G10 end-to-end on one path.
+1. **Finish M0** per the checklist above. Exit: dev server boots a shell page, migrate + seed run clean, tests green — then you review/merge `feature/m0-scaffold`.
+2. **M1 — First vertical slice:** seeded login → create a client → list clients, proving G1/G2/G3/G10 end-to-end on one path.
 
 ## Open questions / deferred decisions
 
