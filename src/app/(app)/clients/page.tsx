@@ -1,5 +1,6 @@
 import { requireActor } from "@/lib/auth";
 import { scopedDb } from "@/lib/scope";
+import { NewClientDialog } from "@/features/clients/new-client-dialog";
 import {
   Table,
   TableBody,
@@ -11,16 +12,20 @@ import {
 
 export default async function ClientsPage() {
   const actor = await requireActor();
-  const clients = await scopedDb(actor.organizationId).client.findMany({
-    where: { archivedAt: null },
-    orderBy: { name: "asc" },
-  });
+  const db = scopedDb(actor.organizationId);
+  const [org, clients] = await Promise.all([
+    db.organization.findFirst(),
+    db.client.findMany({
+      where: { archivedAt: null },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Clients</h1>
-        {/* Seg 4: "New client" button + create dialog land here */}
+        <NewClientDialog defaultCurrency={org?.defaultCurrency ?? "USD"} />
       </div>
 
       {clients.length === 0 ? (

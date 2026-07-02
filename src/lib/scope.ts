@@ -14,6 +14,12 @@ import { db } from "@/lib/db";
 // Known edge (fine for the POC, revisit with multi-tenant reality): nested
 // relation writes (create: { client: { create: ... } }) aren't traversed —
 // feature code writes scalar FKs. Raw SQL is banned outright by G8.
+//
+// Types vs. runtime on create: a query extension can't relax Prisma's arg
+// types, so `create` still *requires* organizationId at compile time. Call
+// sites pass the actor's org id to satisfy the type; scopeArgs stamps over
+// whatever was passed (spread first, stamp last), so the runtime value is
+// always the scoped one.
 
 // Operations whose `where` is a plain filter — AND the tenant key in.
 const FILTER_WHERE_OPS = new Set([
