@@ -29,7 +29,7 @@ The single source of "where we are and what's next," so any session can resume w
 - [x] **Seg 0** — branch + this checklist + status refresh
 - [x] **Seg 1** — the seams under load: `scope.ts` (`scopedDb` extension), `authz.ts` grows `can()`/`requireCapability`, `auth.ts` grows `currentActor()`; authz + scope unit tests
 - [x] **Seg 2** — route guard (`src/proxy.ts` — Next 16 renamed "middleware" to "proxy") redirects logged-out visitors to /login; login page styled (shadcn/ui)
-- [ ] **Seg 3** — app shell (nav sidebar) + clients list page reading through `scopedDb`
+- [x] **Seg 3** — app shell: guarded `(app)` route group (layout calls `requireActor()`), nav sidebar + sign-out, dashboard placeholder, `/clients` list reading through `scopedDb`
 - [ ] **Seg 4** — create-client dialog + capability-guarded server action (currency pre-filled from org default); seed v1 (two clients)
 - [ ] **Seg 5** — exit-criteria sweep + changelog + wrap-up
 
