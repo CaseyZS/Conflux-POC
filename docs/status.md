@@ -28,7 +28,7 @@ The single source of "where we are and what's next," so any session can resume w
 **M2 — Projects & tasks** on `feature/m2-projects-tasks` (plan.md § M2). Segments — each lands committed and green (lint + tests + build + live smoke):
 
 - [x] **Seg 0** — open the milestone: this checklist + status refresh.
-- [ ] **Seg 1** — client detail page: route + header, edit-client dialog, archive/unarchive (G12: archived drop out of pickers, keep history).
+- [x] **Seg 1** — client detail page: route + header, edit-client dialog, archive/unarchive (G12: archived drop out of pickers, keep history).
 - [ ] **Seg 2** — projects: create/edit dialog under a client (billing-type selector; hourly → method + rate per D6, fixed fee → amount; per-person/flat visible but disabled), archive; projects listed on the client detail page.
 - [ ] **Seg 3** — tasks: org-wide task list page (name, default-billable, archive) with create/edit.
 - [ ] **Seg 4** — project↔task assignments: editor on the project (assign/retire via `active`, per-assignment billable override, per-task rate when the method is per-task); rates rendered through the shared read layer (G10 seam for `rate.view`).
