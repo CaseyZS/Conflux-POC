@@ -26,7 +26,7 @@ The single source of "where we are and what's next," so any session can resume w
 **M0 — Scaffold** on `feature/m0-scaffold`, built in committed segments (one green commit each) so any session can resume from the last tick. Details per segment live in `docs/plan.md` § M0.
 
 - [x] **Seg 0** — branch + this checklist + status refresh
-- [ ] **Seg 1** — Next.js scaffold (TS, App Router, Tailwind, `src/`) + ESLint/Prettier + npm scripts
+- [x] **Seg 1** — Next.js scaffold (TS, App Router, Tailwind, `src/`) + ESLint/Prettier + npm scripts
 - [ ] **Seg 2** — Prisma + SQLite: full 15-model schema, first migration, `db.ts`
 - [ ] **Seg 3** — Seed v0: org, admin User/Membership, three roles + capability rows
 - [ ] **Seg 4** — Auth.js v5 skeleton: Credentials + bcrypt; login works (unstyled)

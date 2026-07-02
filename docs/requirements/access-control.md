@@ -2,7 +2,7 @@
 
 _Part of the [Conflux requirements](../requirements.md). Cross-cutting: these rules apply across every feature. Enforcement guardrails live in [architecture.md](../architecture.md)._
 
-Almost none of this is *built* in the single-user POC, but the *shape* is decided now so multi-user, multi-tenant, and customizable roles are all additive rather than retrofits.
+Almost none of this is _built_ in the single-user POC, but the _shape_ is decided now so multi-user, multi-tenant, and customizable roles are all additive rather than retrofits.
 
 ## Authentication (POC vs. target)
 
@@ -40,11 +40,11 @@ The capability list is deliberately all about _managing_ (writing) — reads fol
 
 The POC ships three fixed seed roles (rows in the roles table, backed by the capability system above — no role-editor UI yet):
 
-| Role        | Holds capabilities                                                                                     | In plain terms                                              |
-| ----------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| **Member**  | `time.track`                                                                                           | Logs and views their **own** time.                         |
-| **Manager** | Member + `time.view.all`, `rate.view`, `client.manage`, `project.manage`, `invoice.manage`              | Operational: runs clients/projects/tasks and invoicing.    |
-| **Admin**   | Manager + `company.settings`, `users.manage`, `roles.manage`, `billing.account`                        | Company/tenant administration.                             |
+| Role | Holds capabilities | In plain terms |
+| --- | --- | --- |
+| **Member** | `time.track` | Logs and views their **own** time. |
+| **Manager** | Member + `time.view.all`, `rate.view`, `client.manage`, `project.manage`, `invoice.manage` | Operational: runs clients/projects/tasks and invoicing. |
+| **Admin** | Manager + `company.settings`, `users.manage`, `roles.manage`, `billing.account` | Company/tenant administration. |
 
 Notes on intent:
 
