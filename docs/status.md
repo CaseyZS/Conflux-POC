@@ -5,7 +5,7 @@ The single source of "where we are and what's next," so any session can resume w
 ## Snapshot
 
 - **Date:** 2026-07-02
-- **Phase:** **M0 — Scaffold complete**; `feature/m0-scaffold` (10 commits) pending your review/merge. All exit criteria verified.
+- **Phase:** **M0 — Scaffold complete**; `feature/m0-scaffold` (8 commits) pending your review/merge. All exit criteria verified.
 - **Git:** `develop` holds requirements + the implementation plan. Working branch: `feature/m0-scaffold`, tree clean.
 - **App runnable?** **Yes** — `npm run dev` boots the shell page; login with the seeded admin works (credentials in `README.md`).
 
@@ -24,7 +24,7 @@ The single source of "where we are and what's next," so any session can resume w
 
 ## In progress
 
-- `feature/m0-scaffold` (10 commits) awaiting your review/merge into `develop`. All M0 exit criteria verified: fresh migrate + seed run clean (proven on a scratch database), `npm test` green (5 money tests), lint/build green, and the credentials login flow verified over live HTTP.
+- `feature/m0-scaffold` (9 commits) awaiting your review/merge into `develop`. All M0 exit criteria verified: fresh migrate + seed run clean (proven on a scratch database), `npm test` green (5 money tests), lint/build green, and the credentials login flow verified over live HTTP.
 
 ## Next up (ordered)
 
