@@ -8,14 +8,14 @@ This file is the **index**. Detailed requirements live in per-topic documents un
 
 Each requirements topic is its own document. To add a feature, create a new doc under `requirements/`, add a row here, and have it **link to the [data model](./requirements/data-model.md) rather than restate it**.
 
-| Document                                                    | Covers                                                                    | Status |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
-| _(this index)_                                              | Framing & scope, POC in/out boundary                                      | ✅     |
-| [Data model](./requirements/data-model.md)                  | Org, identity (User/Membership/Role), Clients, Projects, Tasks, billing selectors — the **shared spine** | ✅     |
-| [Time tracking](./requirements/time-tracking.md)            | Live timer + manual entry, day & weekly timesheet views                   | ✅     |
-| [Invoicing](./requirements/invoicing.md)                    | Invoice sources, grouping, draft→finalize lifecycle, output, fields       | ✅     |
-| [Users & access](./requirements/access-control.md)          | Authentication, multi-tenancy, capability-based RBAC                       | ✅     |
-| [Tech & non-functional](./requirements/tech-and-nfr.md)     | Stack choices and non-functional requirements                             | ✅     |
+| Document | Covers | Status |
+| --- | --- | --- |
+| _(this index)_ | Framing & scope, POC in/out boundary | ✅ |
+| [Data model](./requirements/data-model.md) | Org, identity (User/Membership/Role), Clients, Projects, Tasks, billing selectors — the **shared spine** | ✅ |
+| [Time tracking](./requirements/time-tracking.md) | Live timer + manual entry, day & weekly timesheet views | ✅ |
+| [Invoicing](./requirements/invoicing.md) | Invoice sources, grouping, draft→finalize lifecycle, output, fields | ✅ |
+| [Users & access](./requirements/access-control.md) | Authentication, multi-tenancy, capability-based RBAC | ✅ |
+| [Tech & non-functional](./requirements/tech-and-nfr.md) | Stack choices and non-functional requirements | ✅ |
 
 Related: [architecture.md](./architecture.md) (guardrails + decisions that keep these forward-compatible), [status.md](./status.md) (where we are / what's next).
 

@@ -4,10 +4,10 @@ The single source of "where we are and what's next," so any session can resume w
 
 ## Snapshot
 
-- **Date:** 2026-07-01
-- **Phase:** Implementation plan complete (`docs/plan.md`) — full Prisma schema, shared foundations, milestones M0–M5 with exit criteria. Ready to scaffold (M0). No app code yet.
-- **Git:** `develop` holds requirements + all gap reviews (merged). The plan sits on `feature/implementation-plan` (8 commits) pending your review/merge.
-- **App runnable?** No — nothing scaffolded yet.
+- **Date:** 2026-07-02
+- **Phase:** **M0 — Scaffold complete**; `feature/m0-scaffold` pending your review/merge. All exit criteria verified.
+- **Git:** `develop` holds requirements + the implementation plan. Working branch: `feature/m0-scaffold`, tree clean.
+- **App runnable?** **Yes** — `npm run dev` boots the shell page; login with the seeded admin works (credentials in `README.md`).
 
 ## Done
 
@@ -20,16 +20,16 @@ The single source of "where we are and what's next," so any session can resume w
 - Requirements **gap review** completed across four passes (Tier-1 one-way doors, external pass A: rate.view/periods/date-only, pass B structural: Invoice entities/G12/grouping, pass C compliance/lifecycle: finalize snapshots/Membership.active/D12); decision log current through D12. All merged to `develop`.
 - **Implementation plan written** (`docs/plan.md`): the full Prisma schema (15 models honoring D1–D14, with schema-wide conventions for SQLite's dialect limits), the shared foundations (feature-first layout, the `lib/` seams for auth/authz/scoping/money/dates/assets, Vitest), and milestones M0–M5, each with scope, a staged seed increment, and a demoable exit criterion.
 - Planning fallout captured where it belongs: decisions **D13** (SQLite dialect strategy) and **D14** (org-id on join rows) logged in `architecture.md`; the **Invoice↔Project selection** entity added to `docs/requirements/data-model.md` (+ ER diagram).
+- **M0 — Scaffold built** (2026-07-02, `feature/m0-scaffold`): Next.js 16 + TS + Tailwind v4 scaffold with Prettier/ESLint; the full 15-model Prisma schema migrated on SQLite (Prisma 7: `prisma-client` generator, better-sqlite3 driver adapter, `prisma.config.ts`); idempotent seed v0 (org, admin user, 3 roles / 17 capability rows); Auth.js v5 credentials login working end-to-end with a session-aware shell page; Vitest + `money.ts` formatter with first tests; shadcn/ui initialized (Base UI preset).
 
 ## In progress
 
-- `feature/implementation-plan` (8 commits) awaiting your review/merge into `develop`: the plan doc built in six committed segments, plus the D13/D14 log entries and the data-model addition.
+- `feature/m0-scaffold` awaiting your review/merge into `develop`. All M0 exit criteria verified: fresh migrate + seed run clean (proven on a scratch database), `npm test` green (5 money tests), lint/build green, and the credentials login flow verified over live HTTP.
 
 ## Next up (ordered)
 
-1. **Merge** `feature/implementation-plan` into `develop` (human step).
-2. **M0 — Scaffold** per `docs/plan.md`: Next.js + TS + Prisma/SQLite (schema migrated) + Tailwind/shadcn + Auth.js + Vitest/ESLint/Prettier, seed v0. Exit: dev server boots, migrate + seed run clean, tests green.
-3. **M1 — First vertical slice:** seeded login → create a client → list clients, proving G1/G2/G3/G10 end-to-end on one path.
+1. **Merge** `feature/m0-scaffold` into `develop` (human step). Optional hands-on check first: `npm run dev`, sign in as the seeded admin, sign out.
+2. **M1 — First vertical slice:** seeded login → create a client → list clients, proving G1/G2/G3/G10 end-to-end on one path. Brings middleware route guarding, `currentActor()`, `scopedDb`, `can()`/`requireCapability`, the app shell, and seed v1 (two clients).
 
 ## Open questions / deferred decisions
 

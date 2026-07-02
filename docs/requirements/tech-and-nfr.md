@@ -4,17 +4,17 @@ _Part of the [Conflux requirements](../requirements.md). Cross-cutting. The enfo
 
 ## Chosen stack
 
-| Concern         | Choice                                   | Why                                                                                                             |
-| --------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Language        | **TypeScript** (end-to-end)              | Static types suit an OOP/typedef mindset and catch bugs before runtime; one language across the whole app.      |
-| Framework       | **Next.js** (App Router)                 | Industry-standard SaaS stack; largest ecosystem for auth, multi-tenancy, and polished UI.                       |
-| Database        | **SQLite → Postgres**                    | SQLite is a zero-config local file for the POC; Postgres is the SaaS target. The ORM makes the swap a config change. |
-| ORM             | **Prisma**                               | Schema file reads like strongly-typed typedefs; trivial SQLite↔Postgres switch; generated TS types.             |
-| UI / styling    | **Tailwind CSS + shadcn/ui**             | Accessible, own-your-code components that hit the "looks professional" bar without hand-rolled CSS.             |
-| Auth            | **Auth.js (NextAuth)**                    | A clean boundary so seeded-login-now becomes full-accounts-later by swapping providers, not rewriting.          |
-| PDF             | **HTML→PDF via headless Chromium (Playwright)** | The PDF renders from the *same* styled invoice component as the on-screen view, so they can never drift.  |
-| Money           | **Integer minor units**                  | Avoids floating-point rounding; formatted only at display via one currency-aware formatter, POC assumes 2-decimal (see [Invoicing](./invoicing.md)). |
-| IDs             | **UUIDs**                                | Non-guessable and safe for multi-tenant / distributed data.                                                     |
+| Concern | Choice | Why |
+| --- | --- | --- |
+| Language | **TypeScript** (end-to-end) | Static types suit an OOP/typedef mindset and catch bugs before runtime; one language across the whole app. |
+| Framework | **Next.js** (App Router) | Industry-standard SaaS stack; largest ecosystem for auth, multi-tenancy, and polished UI. |
+| Database | **SQLite → Postgres** | SQLite is a zero-config local file for the POC; Postgres is the SaaS target. The ORM makes the swap a config change. |
+| ORM | **Prisma** | Schema file reads like strongly-typed typedefs; trivial SQLite↔Postgres switch; generated TS types. |
+| UI / styling | **Tailwind CSS + shadcn/ui** | Accessible, own-your-code components that hit the "looks professional" bar without hand-rolled CSS. |
+| Auth | **Auth.js (NextAuth)** | A clean boundary so seeded-login-now becomes full-accounts-later by swapping providers, not rewriting. |
+| PDF | **HTML→PDF via headless Chromium (Playwright)** | The PDF renders from the _same_ styled invoice component as the on-screen view, so they can never drift. |
+| Money | **Integer minor units** | Avoids floating-point rounding; formatted only at display via one currency-aware formatter, POC assumes 2-decimal (see [Invoicing](./invoicing.md)). |
+| IDs | **UUIDs** | Non-guessable and safe for multi-tenant / distributed data. |
 
 ## Non-functional requirements
 

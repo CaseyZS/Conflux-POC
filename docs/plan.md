@@ -6,14 +6,14 @@ How we get from approved requirements to the clickable stakeholder demo. This is
 
 Updated as milestones land; this is the table that persists build state across sessions. (The plan document itself is complete — drafted 2026-07-01.)
 
-| Milestone | Deliverable (one line)                                                                 | Status         |
-| --------- | -------------------------------------------------------------------------------------- | -------------- |
-| M0        | Scaffolded app boots: Next.js + TS + Prisma/SQLite + Tailwind/shadcn + Auth.js, schema migrated, seed runs | ⬜ Not started |
-| M1        | First vertical slice: seeded login → create a client → list clients (proves G1/G3/G10 end-to-end) | ⬜ Not started |
-| M2        | Projects & tasks: project CRUD with billing type/method, global task list, project↔task assignment | ⬜ Not started |
-| M3        | Time tracking: live timer + manual entry, day + weekly views, single-timer policy       | ⬜ Not started |
-| M4        | Invoicing lifecycle: draft from time / fixed fee / manual lines, grouping, finalize→snapshot, mark-as-paid | ⬜ Not started |
-| M5        | Invoice output & demo polish: on-screen + PDF from one component (G9), branding, full demo seed + walkthrough | ⬜ Not started |
+| Milestone | Deliverable (one line) | Status |
+| --- | --- | --- |
+| M0 | Scaffolded app boots: Next.js + TS + Prisma/SQLite + Tailwind/shadcn + Auth.js, schema migrated, seed runs | ✅ Done (2026-07-02) |
+| M1 | First vertical slice: seeded login → create a client → list clients (proves G1/G3/G10 end-to-end) | ⬜ Not started |
+| M2 | Projects & tasks: project CRUD with billing type/method, global task list, project↔task assignment | ⬜ Not started |
+| M3 | Time tracking: live timer + manual entry, day + weekly views, single-timer policy | ⬜ Not started |
+| M4 | Invoicing lifecycle: draft from time / fixed fee / manual lines, grouping, finalize→snapshot, mark-as-paid | ⬜ Not started |
+| M5 | Invoice output & demo polish: on-screen + PDF from one component (G9), branding, full demo seed + walkthrough | ⬜ Not started |
 
 ## Milestones at a glance
 
