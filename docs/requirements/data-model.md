@@ -10,7 +10,8 @@ This document defines the core entities and how they relate — including how ti
 - **User (identity)** — a login: email, password hash, display name. Global and **not** org-scoped; authentication sits behind Auth.js (guardrail G3). A User is _who you are_, independent of any company.
 - **Membership** — a User's seat in one Organization: the org-scoped record that carries the person's roles, an `active` flag (deactivate the seat to revoke access without deleting history — G12), and (later) their per-person billing rate. _This_ is what owns time entries and is recorded as `created_by`. Splitting identity (User) from membership lets one person join multiple orgs later without a rewrite.
 - **Role** — a named set of capabilities, stored per Organization. A Membership holds **one or more** Roles and its effective capabilities are the **union** (Discord-style). Roles are data, not code — see [access-control](./access-control.md).
-- **Client** — the company being billed. Fields: name, contact person, email, billing address (free-text block), currency, status (active/archived). Org-owned. Owns projects.
+- **Client** — the company being billed. Fields: name, billing address (free-text block), currency, status (active/archived), plus **one or more contacts** (see Client contact, next). Org-owned. Owns projects. _POC status (2026-07-02): the app stores a single contact person + email on the Client row for now; multi-contact is the requirement, and the migration is additive (new child table, existing contact copied over) — a two-way door, so the single-column shape ships first._
+- **Client contact** — a person at the client company (requirement captured 2026-07-02): name, email; further fields (title, phone) are additive later. A client can have **several** contacts; one is designated **primary**, and the primary's name feeds the invoice's frozen bill-to block at finalize (open: whether an individual invoice can pick a different contact). Org-scoped child of the Client, archived with it (G12).
 - **Project** — a body of work for one client. Fields: name, `billing type`, `billing method` (only when hourly), `hourly rate` (used when hourly + per-project), `fixed fee` amount + nullable `fixed_fee_invoice_id` (the fee's anti-double-bill link, set at finalize), status (active/archived). Currency is inherited from the client, not stored again. Belongs to a client; owns its task assignments.
 - **Task** — a reusable, company-wide kind of work (e.g. Design, Development, Meeting, Admin). Maintained as one global list per Organization and assigned to projects. Fields: name, default billable flag, active flag.
 - **Project ↔ Task assignment** — the join that says "this task is available on this project." Carries the per-project details: an `active` flag (retire the task from this project's picker without touching historic entries), the billable flag (overrides the task default), and — when the project's billing method is per-task — the task's rate on this project.
@@ -59,6 +60,7 @@ erDiagram
     ORGANIZATION ||--o{ ROLE : defines
     USER ||--o{ MEMBERSHIP : "is identity for"
     MEMBERSHIP }o--o{ ROLE : granted
+    CLIENT ||--o{ CLIENT_CONTACT : "reached via"
     CLIENT ||--o{ PROJECT : "billed for"
     PROJECT ||--o{ PROJECT_TASK : offers
     TASK ||--o{ PROJECT_TASK : "assigned via"

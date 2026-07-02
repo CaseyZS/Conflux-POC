@@ -1,5 +1,6 @@
 // Seed v0 (M0): one Organization, the admin User + Membership, the three seed
 // roles with their capability rows, Admin granted to the seeded member.
+// Seed v1 (M1): two sample clients with invoice-ready details.
 // Idempotent: everything is upserted on stable keys, so re-running is always
 // safe — each milestone extends this script (seed v1, v2, ...) rather than
 // replacing it. Run via `npm run db:seed` (or `npx prisma db seed`).
@@ -36,6 +37,28 @@ const SEED_ROLES: { name: string; capabilities: Capability[] }[] = [
   { name: "Member", capabilities: MEMBER_CAPS },
   { name: "Manager", capabilities: MANAGER_CAPS },
   { name: "Admin", capabilities: ADMIN_CAPS },
+];
+
+// Seed v1: fixed ids so upserts stay idempotent (name isn't unique).
+// One client deliberately uses a non-default currency so per-client currency
+// is visible in the demo data.
+const SEED_CLIENTS = [
+  {
+    id: "00000000-0000-4000-8000-000000000101",
+    name: "Acme Corporation",
+    contactPerson: "Jane Porter",
+    email: "ap@acme.test",
+    billingAddress: "Acme Corporation\n42 Industrial Way\nSpringfield, IL 62704",
+    currency: "USD",
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000102",
+    name: "Globex GmbH",
+    contactPerson: "Lena Meyer",
+    email: "accounts@globex.test",
+    billingAddress: "Globex GmbH\nUnter den Linden 5\n10117 Berlin\nGermany",
+    currency: "EUR",
+  },
 ];
 
 async function main() {
@@ -105,6 +128,18 @@ async function main() {
     }
   }
 
+  for (const client of SEED_CLIENTS) {
+    await db.client.upsert({
+      where: { id: client.id },
+      update: {},
+      create: {
+        ...client,
+        organizationId: org.id,
+        createdById: membership.id,
+      },
+    });
+  }
+
   const counts = {
     organizations: await db.organization.count(),
     users: await db.user.count(),
@@ -112,8 +147,9 @@ async function main() {
     roles: await db.role.count(),
     roleCapabilities: await db.roleCapability.count(),
     membershipRoles: await db.membershipRole.count(),
+    clients: await db.client.count(),
   };
-  console.log(`Seed v0 complete for "${org.name}" (${ADMIN_EMAIL}):`, counts);
+  console.log(`Seed v1 complete for "${org.name}" (${ADMIN_EMAIL}):`, counts);
 }
 
 main()

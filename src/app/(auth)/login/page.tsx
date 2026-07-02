@@ -1,9 +1,16 @@
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
-import { signIn } from "@/lib/auth";
-
-// M0 skeleton: deliberately bare — proves the credentials flow end-to-end.
-// M1 restyles this with shadcn/ui and adds the middleware route guard.
+import { auth, signIn } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 async function login(formData: FormData) {
   "use server";
@@ -26,44 +33,54 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  // The middleware matcher excludes /login, so an already-signed-in visitor
+  // would otherwise see the form again — send them home instead.
+  const session = await auth();
+  if (session?.user) redirect("/");
+
   const { error } = await searchParams;
 
   return (
-    <main className="mx-auto mt-24 max-w-sm p-4">
-      <h1 className="mb-6 text-2xl font-semibold">Sign in to Conflux</h1>
-      {error && (
-        <p className="mb-4 text-sm text-red-600">
-          Invalid email or password. Try again.
-        </p>
-      )}
-      <form action={login} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          Email
-          <input
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            className="rounded border px-2 py-1"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Password
-          <input
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            className="rounded border px-2 py-1"
-          />
-        </label>
-        <button
-          type="submit"
-          className="mt-2 rounded bg-black px-3 py-1.5 text-white"
-        >
-          Sign in
-        </button>
-      </form>
+    <main className="flex min-h-svh items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-xl">Sign in to Conflux</CardTitle>
+          <CardDescription>Time tracking &amp; invoicing</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={login} className="grid gap-4">
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                Invalid email or password. Try again.
+              </p>
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="you@example.com"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+              />
+            </div>
+            <Button type="submit" className="mt-2 w-full">
+              Sign in
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </main>
   );
 }
