@@ -5,8 +5,8 @@ The single source of "where we are and what's next," so any session can resume w
 ## Snapshot
 
 - **Date:** 2026-07-02
-- **Phase:** **M0 — Scaffold complete**; `feature/m0-scaffold` pending your review/merge. All exit criteria verified.
-- **Git:** `develop` holds requirements + the implementation plan. Working branch: `feature/m0-scaffold`, tree clean.
+- **Phase:** Building **M1 — First vertical slice** on `feature/m1-vertical-slice` (see the segment checklist under "In progress"). M0 merged.
+- **Git:** `develop` holds requirements + plan + the M0 scaffold. Working branch: `feature/m1-vertical-slice`.
 - **App runnable?** **Yes** — `npm run dev` boots the shell page; login with the seeded admin works (credentials in `README.md`).
 
 ## Done
@@ -24,12 +24,19 @@ The single source of "where we are and what's next," so any session can resume w
 
 ## In progress
 
-- `feature/m0-scaffold` awaiting your review/merge into `develop`. All M0 exit criteria verified: fresh migrate + seed run clean (proven on a scratch database), `npm test` green (5 money tests), lint/build green, and the credentials login flow verified over live HTTP.
+**M1 — First vertical slice** on `feature/m1-vertical-slice`, built in committed segments (one green commit each) so any session can resume from the last tick. Details in `docs/plan.md` § M1.
+
+- [x] **Seg 0** — branch + this checklist + status refresh
+- [ ] **Seg 1** — the seams under load: `scope.ts` (`scopedDb` extension), `authz.ts` grows `can()`/`requireCapability`, `auth.ts` grows `currentActor()`; authz + scope unit tests
+- [ ] **Seg 2** — middleware guards the `(app)` segment; login page styled (shadcn/ui)
+- [ ] **Seg 3** — app shell (nav sidebar) + clients list page reading through `scopedDb`
+- [ ] **Seg 4** — create-client dialog + capability-guarded server action (currency pre-filled from org default); seed v1 (two clients)
+- [ ] **Seg 5** — exit-criteria sweep + changelog + wrap-up
 
 ## Next up (ordered)
 
-1. **Merge** `feature/m0-scaffold` into `develop` (human step). Optional hands-on check first: `npm run dev`, sign in as the seeded admin, sign out.
-2. **M1 — First vertical slice:** seeded login → create a client → list clients, proving G1/G2/G3/G10 end-to-end on one path. Brings middleware route guarding, `currentActor()`, `scopedDb`, `can()`/`requireCapability`, the app shell, and seed v1 (two clients).
+1. **Finish M1** per the checklist above. Exit: log in as the seeded admin, create a client, see it listed, log out and get redirected — with the authz/scoping tests green. Then you review/merge.
+2. **M2 — Projects & tasks:** client detail page, project CRUD (billing type/method per D6), global task list, project↔task assignments; seed v2.
 
 ## Open questions / deferred decisions
 
