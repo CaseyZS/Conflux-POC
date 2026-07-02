@@ -5,9 +5,9 @@ The single source of "where we are and what's next," so any session can resume w
 ## Snapshot
 
 - **Date:** 2026-07-02
-- **Phase:** Building **M0 — Scaffold** on `feature/m0-scaffold` (see the segment checklist under "In progress").
-- **Git:** `develop` holds requirements + the implementation plan (all merged). Working branch: `feature/m0-scaffold`.
-- **App runnable?** Not yet — scaffold in progress.
+- **Phase:** **M0 — Scaffold complete**; `feature/m0-scaffold` (10 commits) pending your review/merge. All exit criteria verified.
+- **Git:** `develop` holds requirements + the implementation plan. Working branch: `feature/m0-scaffold`, tree clean.
+- **App runnable?** **Yes** — `npm run dev` boots the shell page; login with the seeded admin works (credentials in `README.md`).
 
 ## Done
 
@@ -20,22 +20,16 @@ The single source of "where we are and what's next," so any session can resume w
 - Requirements **gap review** completed across four passes (Tier-1 one-way doors, external pass A: rate.view/periods/date-only, pass B structural: Invoice entities/G12/grouping, pass C compliance/lifecycle: finalize snapshots/Membership.active/D12); decision log current through D12. All merged to `develop`.
 - **Implementation plan written** (`docs/plan.md`): the full Prisma schema (15 models honoring D1–D14, with schema-wide conventions for SQLite's dialect limits), the shared foundations (feature-first layout, the `lib/` seams for auth/authz/scoping/money/dates/assets, Vitest), and milestones M0–M5, each with scope, a staged seed increment, and a demoable exit criterion.
 - Planning fallout captured where it belongs: decisions **D13** (SQLite dialect strategy) and **D14** (org-id on join rows) logged in `architecture.md`; the **Invoice↔Project selection** entity added to `docs/requirements/data-model.md` (+ ER diagram).
+- **M0 — Scaffold built** (2026-07-02, `feature/m0-scaffold`): Next.js 16 + TS + Tailwind v4 scaffold with Prettier/ESLint; the full 15-model Prisma schema migrated on SQLite (Prisma 7: `prisma-client` generator, better-sqlite3 driver adapter, `prisma.config.ts`); idempotent seed v0 (org, admin user, 3 roles / 17 capability rows); Auth.js v5 credentials login working end-to-end with a session-aware shell page; Vitest + `money.ts` formatter with first tests; shadcn/ui initialized (Base UI preset).
 
 ## In progress
 
-**M0 — Scaffold** on `feature/m0-scaffold`, built in committed segments (one green commit each) so any session can resume from the last tick. Details per segment live in `docs/plan.md` § M0.
-
-- [x] **Seg 0** — branch + this checklist + status refresh
-- [x] **Seg 1** — Next.js scaffold (TS, App Router, Tailwind, `src/`) + ESLint/Prettier + npm scripts
-- [x] **Seg 2** — Prisma + SQLite: full 15-model schema, first migration, `db.ts` (Prisma 7: `prisma-client` generator + better-sqlite3 driver adapter)
-- [x] **Seg 3** — Seed v0: org, admin User/Membership, three roles + capability rows (idempotent upserts; `npm run db:seed`)
-- [x] **Seg 4** — Auth.js v5 skeleton: Credentials + bcrypt; login works (unstyled); shell home page shows session state
-- [ ] **Seg 5** — Vitest + shadcn/ui init + placeholder test; verify M0 exit criteria
+- `feature/m0-scaffold` (10 commits) awaiting your review/merge into `develop`. All M0 exit criteria verified: fresh migrate + seed run clean (proven on a scratch database), `npm test` green (5 money tests), lint/build green, and the credentials login flow verified over live HTTP.
 
 ## Next up (ordered)
 
-1. **Finish M0** per the checklist above. Exit: dev server boots a shell page, migrate + seed run clean, tests green — then you review/merge `feature/m0-scaffold`.
-2. **M1 — First vertical slice:** seeded login → create a client → list clients, proving G1/G2/G3/G10 end-to-end on one path.
+1. **Merge** `feature/m0-scaffold` into `develop` (human step). Optional hands-on check first: `npm run dev`, sign in as the seeded admin, sign out.
+2. **M1 — First vertical slice:** seeded login → create a client → list clients, proving G1/G2/G3/G10 end-to-end on one path. Brings middleware route guarding, `currentActor()`, `scopedDb`, `can()`/`requireCapability`, the app shell, and seed v1 (two clients).
 
 ## Open questions / deferred decisions
 
