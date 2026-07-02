@@ -17,6 +17,7 @@ This document defines the core entities and how they relate — including how ti
 - **Time entry** — a logged span of work, attributed to the **Membership** that recorded it. Fields: date (date-only), the Project↔Task assignment, duration (integer seconds), note, and a nullable `invoice_id` (set when billed — the anti-double-bill link). Full behavior in [time tracking](./time-tracking.md).
 - **Invoice** — a bill to one **Client** (org-scoped). Fields: status (`draft` → `sent` → `paid`), invoice number (assigned at finalize), issue date, due date (defaults to issue + terms, **user-overridable**), payment terms, PO number, discount, tax, footer, and — snapshotted at finalize — the **currency**, money totals, and frozen **bill-to** (client name/contact/address) and **from/branding** (org name/address/contact; logo by reference) blocks. Has many `InvoiceLine`s. Full lifecycle in [invoicing](./invoicing.md).
 - **Invoice line** — one line on an invoice. Fields: `source` (tracked-time / fixed-fee / manual), a snapshot **description**, quantity (hours or 1), unit rate, amount, and an optional `project_id` (set on **manual** lines so ad-hoc charges attribute to a project for later reporting — captured at entry, since finalized invoices can't be backfilled). Time and fixed-fee lines are written as an immutable snapshot at finalize; manual lines exist from the draft.
+- **Invoice ↔ Project selection** — the draft's stored choice of which of the client's projects feed the invoice ([invoicing](./invoicing.md): "a draft stores its choices"), with two flags per selected project: pull its unbilled billable time, and/or include its fixed fee. Deleted with its draft (cascade — it's a choice, not financial history); the anti-double-bill links on time entries and the fixed fee are separate and set only at finalize.
 
 ## Ownership & scoping (what "owner" means)
 
@@ -69,6 +70,8 @@ erDiagram
     INVOICE ||--o{ TIME_ENTRY : "bills (nullable)"
     INVOICE ||--o{ PROJECT : "bills fee (nullable)"
     PROJECT ||--o{ INVOICE_LINE : "manual line (nullable)"
+    INVOICE ||--o{ INVOICE_PROJECT : selects
+    PROJECT ||--o{ INVOICE_PROJECT : "feeds via"
 ```
 
 ## Rate storage: derive, don't duplicate (until finalized)
