@@ -4,20 +4,7 @@ How we get from approved requirements to the clickable stakeholder demo. This is
 
 ## Progress
 
-### Drafting progress (this document)
-
-The plan itself is written in committed segments so a session can resume mid-draft. Remove this checklist once all segments land.
-
-- [x] Segment 1 — skeleton: framing, progress tables, milestone summaries
-- [x] Segment 2 — Prisma schema, part 1: the spine (Organization, User, Membership, Role, Client, Project, Task, ProjectTask)
-- [x] Segment 3 — Prisma schema, part 2: the activity (TimeEntry, Invoice, InvoiceLine, enums, FK rules)
-- [x] Segment 4 — shared foundations: folder layout, authz/org-scoping seams, money module, testing choice
-- [x] Segment 5 — milestone details M0–M5 incl. the first vertical slice
-- [ ] Segment 6 — wrap-up: status.md refresh, changelog check
-
-### Build progress (milestones)
-
-Updated as milestones land; this is the table that persists build state across sessions.
+Updated as milestones land; this is the table that persists build state across sessions. (The plan document itself is complete — drafted 2026-07-01.)
 
 | Milestone | Deliverable (one line)                                                                 | Status         |
 | --------- | -------------------------------------------------------------------------------------- | -------------- |
