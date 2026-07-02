@@ -36,3 +36,8 @@ next-env.d.ts
 # --- Deploy ---
 .vercel
 *.pem
+
+# --- Prisma (generated client + local SQLite db) ---
+/src/generated/prisma
+/prisma/*.db
+/prisma/*.db-journal

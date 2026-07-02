@@ -27,7 +27,7 @@ The single source of "where we are and what's next," so any session can resume w
 
 - [x] **Seg 0** — branch + this checklist + status refresh
 - [x] **Seg 1** — Next.js scaffold (TS, App Router, Tailwind, `src/`) + ESLint/Prettier + npm scripts
-- [ ] **Seg 2** — Prisma + SQLite: full 15-model schema, first migration, `db.ts`
+- [x] **Seg 2** — Prisma + SQLite: full 15-model schema, first migration, `db.ts` (Prisma 7: `prisma-client` generator + better-sqlite3 driver adapter)
 - [ ] **Seg 3** — Seed v0: org, admin User/Membership, three roles + capability rows
 - [ ] **Seg 4** — Auth.js v5 skeleton: Credentials + bcrypt; login works (unstyled)
 - [ ] **Seg 5** — Vitest + shadcn/ui init + placeholder test; verify M0 exit criteria
