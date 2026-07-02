@@ -27,7 +27,7 @@ The single source of "where we are and what's next," so any session can resume w
 **M1 — First vertical slice** on `feature/m1-vertical-slice`, built in committed segments (one green commit each) so any session can resume from the last tick. Details in `docs/plan.md` § M1.
 
 - [x] **Seg 0** — branch + this checklist + status refresh
-- [ ] **Seg 1** — the seams under load: `scope.ts` (`scopedDb` extension), `authz.ts` grows `can()`/`requireCapability`, `auth.ts` grows `currentActor()`; authz + scope unit tests
+- [x] **Seg 1** — the seams under load: `scope.ts` (`scopedDb` extension), `authz.ts` grows `can()`/`requireCapability`, `auth.ts` grows `currentActor()`; authz + scope unit tests
 - [ ] **Seg 2** — middleware guards the `(app)` segment; login page styled (shadcn/ui)
 - [ ] **Seg 3** — app shell (nav sidebar) + clients list page reading through `scopedDb`
 - [ ] **Seg 4** — create-client dialog + capability-guarded server action (currency pre-filled from org default); seed v1 (two clients)
