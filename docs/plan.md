@@ -10,7 +10,7 @@ The plan itself is written in committed segments so a session can resume mid-dra
 
 - [x] Segment 1 — skeleton: framing, progress tables, milestone summaries
 - [x] Segment 2 — Prisma schema, part 1: the spine (Organization, User, Membership, Role, Client, Project, Task, ProjectTask)
-- [ ] Segment 3 — Prisma schema, part 2: the activity (TimeEntry, Invoice, InvoiceLine, enums, FK rules)
+- [x] Segment 3 — Prisma schema, part 2: the activity (TimeEntry, Invoice, InvoiceLine, enums, FK rules)
 - [ ] Segment 4 — shared foundations: folder layout, authz/org-scoping seams, money module, testing choice
 - [ ] Segment 5 — milestone details M0–M5 incl. the first vertical slice
 - [ ] Segment 6 — wrap-up: status.md refresh, changelog check
@@ -255,7 +255,129 @@ model ProjectTask {
 
 ## Prisma schema — part 2: the activity
 
-_(To be drafted — segment 3.)_
+The records the demo actually produces: TimeEntry, Invoice, InvoiceLine, plus `InvoiceProject` — the draft's stored selection of which projects (time and/or fee) feed the invoice. The schema-wide conventions from part 1 apply. Part-2 specific notes:
+
+- **Running timer = open entry (D5):** `startedAt` non-null means running; stop collapses the session into `durationSeconds` and clears it. The single-timer rule is **application policy** — deliberately no DB uniqueness constraint (G6). Resume-as-continue (D12) just re-opens the row: `durationSeconds` accumulates across sessions, `startedAt` times only the live one.
+- **Date-only days (D11):** `TimeEntry.date` is a `String` `"YYYY-MM-DD"` from the user's local calendar — and invoice issue/due dates use the same convention. A welcome side effect: ISO date strings sort lexicographically in chronological order, so range queries and ordering just work. Postgres can tighten to native `DATE` later (D13 spirit).
+- **Draft derives, finalize fills (G5):** on a draft, currency, totals, bill-to, and from/branding are **derived live** — so their Invoice columns are nullable and stay `NULL` until finalize snapshots them. A `NULL` snapshot column on a `draft` invoice is normal; on a `sent`/`paid` invoice it's a bug.
+- **Quantity as integer millis:** SQLite has no `Decimal`, and floats are banned near money, so line quantity is `quantityMilli` — thousandths of a unit (12.5 h → `12500`; a manual line's "1" → `1000`). Same integer discipline as money, one convention for hours and counts.
+- **Discount is two mutually exclusive columns** (`discountPercentBps` / `discountFlatMinor`) rather than a type+value pair — each column has exactly one unit, so a basis-point value can never be misread as minor units (G4's "unit unmissable" rule). App validation enforces at-most-one.
+- **Referential actions:** everything financial is `Restrict` — including `TimeEntry → Invoice` and the invoice's logo `Asset` reference. `Cascade` only from Invoice down to its own lines and project-selection rows, which implements "deleting a draft removes just the draft and its manual lines" (only drafts are ever deletable, by app policy). Line order gets an explicit `position` — print order is part of the financial record.
+- **Gapless invoice numbers:** finalize runs in one transaction that reads + increments `Organization.invoiceNextNumber` and writes the snapshot — the number is assigned nowhere else.
+
+### Models
+
+```prisma
+model TimeEntry {
+  id              String       @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  membershipId    String
+  membership      Membership   @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  projectTaskId   String
+  projectTask     ProjectTask  @relation(fields: [projectTaskId], references: [id], onDelete: Restrict)
+  date            String       // "YYYY-MM-DD", user-local calendar day (D11); timer spanning midnight keeps its start day
+  durationSeconds Int          @default(0) // closed sessions' total; a running entry adds live elapsed from startedAt at display
+  note            String?
+  startedAt       DateTime?    // non-null = running (D5); timer plumbing only, not an audit record
+  invoiceId       String?      // set at finalize = billed, immutable thereafter (anti-double-bill)
+  invoice         Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([membershipId, date]) // day + week views: my entries for a date range
+  @@index([projectTaskId])
+  @@index([invoiceId]) // unbilled pool: invoiceId IS NULL
+}
+
+model Invoice {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  clientId       String
+  client         Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  status         String       @default("draft") // "draft" | "sent" | "paid"
+  number         String?      // assigned at finalize from org prefix + sequence; never on drafts
+
+  // draft choices (stored from the start, editable while draft)
+  grouping           String  @default("task") // "task" | "person" | "summary" | "detailed"
+  showDate           Boolean @default(false)  // optional line-item detail toggles
+  showPerson         Boolean @default(false)
+  showTask           Boolean @default(false)
+  showNote           Boolean @default(false)
+  issueDate          String? // "YYYY-MM-DD"
+  dueDate            String? // null on draft = derive issueDate + terms at display; resolved + frozen at finalize (user-overridable)
+  paymentTermsDays   Int     // pre-filled from org default at creation, then owned here
+  poNumber           String?
+  discountPercentBps Int?    // XOR discountFlatMinor (app-validated)
+  discountFlatMinor  Int?
+  taxRateBps         Int?    // single tax, applied after discount; pre-filled from org default
+  footer             String? // pre-filled from org default
+
+  // snapshot columns — NULL until finalize (draft derives these live, G5)
+  currency      String?
+  subtotalMinor Int?
+  discountMinor Int?
+  taxMinor      Int?
+  totalMinor    Int?
+  billToName    String?
+  billToContact String?
+  billToAddress String?
+  fromName      String?
+  fromDetails   String?
+  logoAssetId   String? // logo by reference
+  logoAsset     Asset?  @relation("InvoiceLogo", fields: [logoAssetId], references: [id], onDelete: Restrict)
+
+  lines             InvoiceLine[]
+  projectSelections InvoiceProject[]
+  billedTimeEntries TimeEntry[]
+  billedFixedFees   Project[]        @relation("ProjectFixedFeeInvoice") // completes Project.fixedFeeInvoiceId from part 1
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, number]) // SQLite + Postgres both allow many NULLs here, so drafts don't collide
+  @@index([organizationId])
+  @@index([clientId])
+}
+
+model InvoiceProject {
+  invoiceId       String
+  invoice         Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  projectId       String
+  project         Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  organizationId  String
+  includeTime     Boolean @default(true)  // pull this project's unbilled billable time
+  includeFixedFee Boolean @default(false) // include this project's flat fee as a line
+  createdAt       DateTime @default(now())
+
+  @@id([invoiceId, projectId])
+  @@index([organizationId])
+}
+
+model InvoiceLine {
+  id             String   @id @default(uuid())
+  organizationId String
+  invoiceId      String
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade) // only drafts are deletable; takes manual lines with it
+  source         String   // "time" | "fixed_fee" | "manual" — time + fee lines written only at finalize; manual lines exist from the draft
+  description    String
+  quantityMilli  Int      // thousandths of a unit: hours for time lines (12.5h = 12500), count for fee/manual (1 = 1000)
+  unitRateMinor  Int
+  amountMinor    Int      // per-line, half-up (D9); subtotal = sum of these
+  projectId      String?  // manual lines: optional project attribution, captured at entry (can't backfill a finalized invoice)
+  project        Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  position       Int      @default(0) // print order is part of the financial record
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([invoiceId])
+  @@index([projectId])
+}
+```
+
+Part 1's `part 2` placeholders resolve as: `Organization` gains `timeEntries TimeEntry[]` + `invoices Invoice[]`, `Membership` gains `timeEntries TimeEntry[]`, `Client` gains `invoices Invoice[]`, `Asset` gains `invoiceLogos Invoice[] @relation("InvoiceLogo")`, `Project` gains `fixedFeeInvoice Invoice? @relation("ProjectFixedFeeInvoice", ...)` on its part-1 `fixedFeeInvoiceId` plus `invoiceSelections InvoiceProject[]` and `manualLines InvoiceLine[]`, and `ProjectTask` gains `timeEntries TimeEntry[]`.
 
 ## Shared foundations
 
