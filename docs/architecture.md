@@ -57,6 +57,8 @@ Point-in-time decisions with their rationale, so future sessions can revisit del
 | D10 | Clients/Projects/Tasks are org-shared (org-scoped + `created_by` audit); only Time Entries are member-attributed | Two-way | Resolves the "owner" ambiguity toward shared org assets; per-user privacy was never required (clarifies D1, [data model](./requirements/data-model.md)). | 2026-07-01 |
 | D11 | Time-entry day stored as date-only `YYYY-MM-DD` from the user's local calendar | One-way | Sidesteps UTC-rollover and is correct across timezones without migration; a separate timestamp drives live elapsed ([time tracking](./requirements/time-tracking.md)). | 2026-07-01 |
 | D12 | Resume encourages a new pre-filled entry but may continue an existing one (duration accumulates across sessions) | Two-way | Nudged default keeps entries as single spans; the optional continue path attributes added time to the original entry's day (refines D5, [time tracking](./requirements/time-tracking.md)). | 2026-07-01 |
+| D13 | SQLite dialect strategy: semantic enums are `String` columns + TS union validation; percentages are integer basis points; role capabilities are child rows | Two-way  | Prisma on SQLite supports no `enum`/`Json`/`Decimal`; validating in the data layer keeps the schema portable, and the Postgres switch (G8) can tighten to native types as an additive migration ([plan](./plan.md)). | 2026-07-01 |
+| D14 | `organizationId` is carried on join/child rows too (plain indexed scalar there, FK on entity tables) | Two-way  | Takes G1's "every row" literally as the licensed exception to G5: uniform tenant filtering now, and Postgres row-level security later needs the column on every table it guards ([plan](./plan.md)). | 2026-07-01 |
 
 ## When to revisit a guardrail
 
