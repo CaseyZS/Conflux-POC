@@ -6,10 +6,20 @@ A self-hosted time-tracking and invoicing app (Harvest-style), built as a proof 
 
 ```bash
 npm install
+cp .env.example .env
+npx prisma migrate dev
+npm run db:seed
 npm run dev
 ```
 
 Then open <http://localhost:3000>.
+
+## Demo login
+
+The seed creates one admin account (demo-only credentials, safe to publish):
+
+- **Email:** `admin@conflux.test`
+- **Password:** `conflux-demo`
 
 ## Scripts
 
@@ -17,6 +27,7 @@ Then open <http://localhost:3000>.
 - `npm run build` / `npm run start` — production build and serve
 - `npm run lint` — ESLint
 - `npm run format` / `npm run format:md` — Prettier (write); `npm run lint:md` checks Markdown formatting
+- `npm run db:seed` — (re)apply the demo seed; idempotent, safe to re-run
 
 ## Project docs
 
