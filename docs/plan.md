@@ -12,7 +12,7 @@ The plan itself is written in committed segments so a session can resume mid-dra
 - [x] Segment 2 — Prisma schema, part 1: the spine (Organization, User, Membership, Role, Client, Project, Task, ProjectTask)
 - [x] Segment 3 — Prisma schema, part 2: the activity (TimeEntry, Invoice, InvoiceLine, enums, FK rules)
 - [x] Segment 4 — shared foundations: folder layout, authz/org-scoping seams, money module, testing choice
-- [ ] Segment 5 — milestone details M0–M5 incl. the first vertical slice
+- [x] Segment 5 — milestone details M0–M5 incl. the first vertical slice
 - [ ] Segment 6 — wrap-up: status.md refresh, changelog check
 
 ### Build progress (milestones)
@@ -424,4 +424,72 @@ E2E/browser automation is **out** for the POC — the demo walkthrough itself is
 
 ## Milestone details
 
-_(To be drafted — segment 5.)_
+Milestones are strictly sequential — each builds on the previous one's seams and seed data. Working rhythm per milestone: one or more `feature/` branches off `develop`, changelog entries for user-facing changes as they land, and the build-progress table above updated when the milestone's exit criteria pass.
+
+### M0 — Scaffold
+
+Everything stood up empty, so every later milestone starts from a known-good base.
+
+- `create-next-app` (TypeScript, App Router, Tailwind, `src/` layout) + shadcn/ui init.
+- Prisma + SQLite: the full schema above, first migration, `db.ts` singleton (G8).
+- Auth.js v5 skeleton wired (Credentials provider, session plumbing) — login works against the seeded user even if the page is unstyled.
+- Vitest, ESLint, Prettier (`proseWrap: "never"`) with scripts: `dev` / `build` / `test` / `lint` / `format` / `format:md` / `lint:md`.
+- Seed v0: one Organization (with invoice defaults), the Admin User + Membership, the three seed roles with their capability rows, Admin granted to the seeded member.
+- **Exit:** `npm run dev` boots a shell page; `prisma migrate dev` and the seed run clean; `npm test` green (a placeholder money test proves the harness).
+
+### M1 — First vertical slice: seeded login → create a client → list clients
+
+Deliberately thin; its whole job is to prove the one-way-door seams end-to-end on one path before any breadth exists. After M1, every further feature is "more of the same," not "first time through."
+
+1. **Login/logout** — styled Credentials form → Auth.js session; middleware guards the `(app)` segment; logged-out access redirects to login (G3 exercised).
+2. **The seams under load** — `currentActor()` resolves the seeded membership; the clients page (server component) reads through `scopedDb` (G1); the "New client" server action is guarded by `requireCapability("client.manage")` (G2/G10) and pre-fills currency from the org default.
+3. **UI floor** — client list table + create dialog in shadcn/ui, plus the app shell (nav sidebar). The "looks professional" bar starts being enforced here.
+4. **Tests land with their code** — `authz.ts` (union, inactive-member denial) and `scope.ts` (filter injected on every verb) unit tests.
+
+- Seed v1: two sample clients with invoice-ready details.
+- **Exit:** log in as the seeded admin, create a client, see it listed, log out and get redirected — with the authz/scoping tests green.
+
+### M2 — Projects & tasks
+
+The client detail page grows the work structure; after M2, everything time tracking needs exists.
+
+- Clients: detail page, edit, archive (`archivedAt`; archived drop out of pickers but keep history — G12).
+- Projects: CRUD under a client; billing-type selector; per-type fields (hourly → method + rate per D6, fixed fee → amount); archive. Per-person/flat stay visible in the selector but disabled ("modeled, not wired").
+- Tasks: the org-wide list (name, default-billable, archive); project↔task assignment editor with per-assignment billable override, per-task rate (when the method is per-task), and the `active` retire toggle.
+- Rates render through the shared read layer so `rate.view` field-stripping stays a later addition, not a refactor (G10).
+- Seed v2: projects covering all three billing types and both wired methods; the global task list; assignments with mixed billable/rates.
+- **Exit:** a real client → project → assigned-tasks structure can be built entirely in the UI.
+
+### M3 — Time tracking
+
+The daily-use loop, and the first half of the demo story.
+
+- **Day view** (default): one date's entries as an editable list; prev/next/today; manual entry via a project→task picker (active assignments only), decimal-hours duration, note, date — future dates warn-and-acknowledge.
+- **Live timer:** start fresh or from an existing entry; starting one stops the running one (app-layer policy, G6/D5); elapsed ticks live (`durationSeconds` + now−`startedAt`); stop collapses the session into the stored duration. Resume offers **new pre-filled entry (encouraged)** or **continue the original** (accumulates, keeps the original's day — D12).
+- **Weekly grid:** projects×days cells for review and bulk entry.
+- Billability is displayed as derived from the assignment — no per-entry flag anywhere in the UI.
+- Tests: `dates.ts` (local-calendar day, midnight-spanning timer keeps its start day, week windows).
+- Seed v3: a working week of entries across projects (including today, so the day view and timer demo aren't empty).
+- **Exit:** track a real day live and retroactively; both timesheet views browsable; exactly one timer can run.
+
+### M4 — Invoicing lifecycle
+
+Tracked work becomes money — draft → finalize → paid, with the anti-double-bill links doing their job.
+
+- **New invoice:** pick the client, select which projects feed it (time and/or fixed fee → `InvoiceProject` rows) → draft.
+- **Draft editor:** time lines derived live from the unbilled pool (`invoiceId IS NULL`, billable only) per the chosen grouping (task / person-split-by-rate / summary / detailed) + detail toggles; manual lines with optional project attribution; discount (percent XOR flat), tax, PO, issue/due dates (due derived from terms until overridden), footer; totals through the `money.ts` pipeline only.
+- **Finalize (one transaction):** assign number (org prefix + counter, increment — gapless), snapshot lines/totals/currency/bill-to/from-branding (logo by reference), link the billed time entries and any fixed fees. Finalized = immutable; no void/credit path in the POC (known deferral). Draft deletion stays allowed (cascade cleans lines + selections).
+- **Sent / paid:** manual status transitions.
+- Tests: the pipeline against real grouping scenarios (odd rates, 8.25% tax, discount-then-tax, person-split-by-rate, lines-sum-to-total); finalize's gapless numbering.
+- Seed v4: one finalized invoice (so history exists) and one open draft.
+- **Exit:** full draft→finalize→paid walkthrough in the UI; a finalized entry can't be pulled into a second invoice.
+
+### M5 — Invoice output & demo polish
+
+The stakeholder-facing finish — this milestone is the demo.
+
+- **Invoice document:** one styled component renders both the on-screen view and the PDF (G9) — Playwright's headless Chromium prints the same route to PDF for download. Print CSS tuned so the PDF looks like a real invoice, not a webpage.
+- **Org settings page:** business name, "from" block, logo upload (→ `Asset`), currency/tax/terms defaults, invoice prefix + next number, footer — the branding that finalize snapshots.
+- **Polish pass over the demo path only:** consistent theming, empty states, loading/error states, a simple landing/dashboard after login. Polish over robustness, per the requirements' guiding principle.
+- **Demo assets:** the full seed (everything above, plus enough variety that every screen shows real data) and `docs/demo.md` — the scripted walkthrough: login → timesheet → live timer → client/project tour → draft invoice → finalize → PDF.
+- **Exit:** the complete stakeholder demo runs from seed in one sitting, ending with a professional PDF in hand.
