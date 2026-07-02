@@ -11,7 +11,7 @@ The plan itself is written in committed segments so a session can resume mid-dra
 - [x] Segment 1 — skeleton: framing, progress tables, milestone summaries
 - [x] Segment 2 — Prisma schema, part 1: the spine (Organization, User, Membership, Role, Client, Project, Task, ProjectTask)
 - [x] Segment 3 — Prisma schema, part 2: the activity (TimeEntry, Invoice, InvoiceLine, enums, FK rules)
-- [ ] Segment 4 — shared foundations: folder layout, authz/org-scoping seams, money module, testing choice
+- [x] Segment 4 — shared foundations: folder layout, authz/org-scoping seams, money module, testing choice
 - [ ] Segment 5 — milestone details M0–M5 incl. the first vertical slice
 - [ ] Segment 6 — wrap-up: status.md refresh, changelog check
 
@@ -381,7 +381,46 @@ Part 1's `part 2` placeholders resolve as: `Organization` gains `timeEntries Tim
 
 ## Shared foundations
 
-_(To be drafted — segment 4.)_
+The seams every feature builds on. These exist from M0/M1 so features inherit the guardrails by construction (G10) instead of re-implementing them — the whole point is that adding a feature later touches its own folder plus nothing.
+
+### Folder layout (feature-first)
+
+```
+prisma/
+  schema.prisma          # the schema above
+  seed.ts                # demo seed; grows with every milestone
+src/
+  app/                   # Next.js App Router: thin route files that call into features
+    (auth)/login/        # public segment
+    (app)/               # authenticated segment: clients/ projects/ time/ invoices/ settings/
+  features/              # one folder per feature: its components + server actions + queries
+    clients/  projects/  tasks/  time/  invoices/  org/
+  lib/                   # the shared seams (below) — the only code features may not duplicate
+  components/            # cross-feature UI; shadcn/ui primitives live here
+```
+
+Routes stay thin (parse params, call the feature, render); logic lives in the feature folder; anything two features need graduates to `lib/`. In LabVIEW terms: `lib/` is the shared subVI library, features are self-contained modules wired to it.
+
+### The seams in `lib/` (one file each)
+
+- **`db.ts` — Prisma client singleton (G8).** The only file that instantiates Prisma; everything imports from here, no raw SQL anywhere.
+- **`scope.ts` — org scoping (G1, G10).** A `scopedDb(organizationId)` built as a **Prisma client extension** that injects `where: { organizationId }` into every query/mutation on org-scoped models automatically. Feature code never touches the bare client — the tenant filter can't be forgotten, only bypassed on purpose (which review catches). This one helper is what makes G1 "habitual from day one".
+- **`authz.ts` — capabilities (G2, G10).** The `Capability` TS union + `CAPABILITIES` const (the ten from [access-control](./requirements/access-control.md)), and `can(actor, capability)` computing the union over the membership's roles. `requireCapability(...)` is the server-action guard: throws → error UI. Checks deny an **inactive membership** outright. Business code never mentions role names.
+- **`auth.ts` — the auth boundary (G3).** Auth.js (v5) with the Credentials provider verifying against `User.passwordHash` (bcrypt). `currentActor()` resolves session → User → active Membership (+ org, + capability union) — the one object server code asks for "who is calling"; the POC's single membership is picked automatically, so a later org-switcher slots in here without touching callers.
+- **`money.ts` — integer money (G4, D9).** `mulRateByHours`, the invoice pipeline (`lineAmount` → subtotal-as-sum-of-rounded-lines → discount → tax → total, each step **per-line half-up**), and the **single** `formatMoney(amountMinor, currency)` built on `Intl.NumberFormat` with a currency-exponent map (defaulting 2) — no hardcoded `÷100` anywhere. Pure functions, no I/O: the most unit-testable code in the app.
+- **`dates.ts` — date-only days (D11).** Make/parse/compare `"YYYY-MM-DD"` in the **user's local calendar**, week-window math for the timesheet views, and "is this date in the future?" for the warn-and-acknowledge rule. No `Date`-at-UTC-midnight anti-patterns escape this file.
+- **`assets.ts` — asset abstraction (NFR).** `getAsset`/`putAsset` over the `Asset` table now; the S3-style swap later replaces this file's internals only.
+
+### Testing: Vitest
+
+**Vitest** for unit tests — TS-native with zero transpile ceremony, Jest-compatible API, and the default in the Next.js ecosystem the stack already sits in. Per the NFR, coverage is deliberately narrow but non-negotiable where correctness is costly:
+
+- `money.ts` — the rounding pipeline (odd rates, 8.25% tax, discount-then-tax ordering, lines-sum-to-total invariant).
+- `dates.ts` — local-calendar day, midnight-spanning timer keeps its start day, week windows.
+- `authz.ts` — capability union across multiple roles, inactive-membership denial.
+- `scope.ts` — the extension injects the org filter on every verb (the tenant-isolation habit, tested once, trusted everywhere).
+
+E2E/browser automation is **out** for the POC — the demo walkthrough itself is the manual E2E. Prettier (with `proseWrap: "never"` for Markdown) and ESLint arrive with the M0 scaffold, giving `AGENTS.md`'s `npm run format:md` / `lint:md` their real targets.
 
 ## Milestone details
 
