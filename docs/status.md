@@ -5,9 +5,9 @@ The single source of "where we are and what's next," so any session can resume w
 ## Snapshot
 
 - **Date:** 2026-07-02
-- **Phase:** Building **M1 — First vertical slice** on `feature/m1-vertical-slice` (see the segment checklist under "In progress"). M0 merged.
-- **Git:** `develop` holds requirements + plan + the M0 scaffold. Working branch: `feature/m1-vertical-slice`.
-- **App runnable?** **Yes** — `npm run dev` boots the shell page; login with the seeded admin works (credentials in `README.md`).
+- **Phase:** **M1 — First vertical slice** is **complete** on `feature/m1-vertical-slice`, awaiting human review + merge. M0 merged.
+- **Git:** `develop` holds requirements + plan + the M0 scaffold. Branch `feature/m1-vertical-slice` holds all of M1 (segs 0–5), tree clean.
+- **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`), create a client, see it listed, sign out.
 
 ## Done
 
@@ -21,22 +21,16 @@ The single source of "where we are and what's next," so any session can resume w
 - **Implementation plan written** (`docs/plan.md`): the full Prisma schema (15 models honoring D1–D14, with schema-wide conventions for SQLite's dialect limits), the shared foundations (feature-first layout, the `lib/` seams for auth/authz/scoping/money/dates/assets, Vitest), and milestones M0–M5, each with scope, a staged seed increment, and a demoable exit criterion.
 - Planning fallout captured where it belongs: decisions **D13** (SQLite dialect strategy) and **D14** (org-id on join rows) logged in `architecture.md`; the **Invoice↔Project selection** entity added to `docs/requirements/data-model.md` (+ ER diagram).
 - **M0 — Scaffold built** (2026-07-02, `feature/m0-scaffold`): Next.js 16 + TS + Tailwind v4 scaffold with Prettier/ESLint; the full 15-model Prisma schema migrated on SQLite (Prisma 7: `prisma-client` generator, better-sqlite3 driver adapter, `prisma.config.ts`); idempotent seed v0 (org, admin user, 3 roles / 17 capability rows); Auth.js v5 credentials login working end-to-end with a session-aware shell page; Vitest + `money.ts` formatter with first tests; shadcn/ui initialized (Base UI preset).
+- **M1 — First vertical slice built** (2026-07-02, `feature/m1-vertical-slice`, segs 0–5): the one-way-door seams proven on one path — `scopedDb` org-scoping extension (G1) with pure `scopeArgs` + tests, `can()`/`requireCapability` (G2/G10) + `currentActor()` (G3) with tests; route guard at `src/proxy.ts` (cookie-presence redirect; authoritative check is `requireActor()` in the `(app)` layout); styled login; app shell (sidebar nav, org + user identity, sign-out); `/clients` list through `scopedDb`; first `src/features/` folder — create-client dialog + `client.manage`-guarded server action, currency pre-filled from org default; seed v1 (Acme/USD, Globex/EUR). 42 unit tests, lint/build/live-smoke green. Convention set: Prisma `create` types still require `organizationId`, call sites pass the actor's and `scopeArgs` stamps over it (documented in `scope.ts`).
 
 ## In progress
 
-**M1 — First vertical slice** on `feature/m1-vertical-slice`, built in committed segments (one green commit each) so any session can resume from the last tick. Details in `docs/plan.md` § M1.
-
-- [x] **Seg 0** — branch + this checklist + status refresh
-- [x] **Seg 1** — the seams under load: `scope.ts` (`scopedDb` extension), `authz.ts` grows `can()`/`requireCapability`, `auth.ts` grows `currentActor()`; authz + scope unit tests
-- [x] **Seg 2** — route guard (`src/proxy.ts` — Next 16 renamed "middleware" to "proxy") redirects logged-out visitors to /login; login page styled (shadcn/ui)
-- [x] **Seg 3** — app shell: guarded `(app)` route group (layout calls `requireActor()`), nav sidebar + sign-out, dashboard placeholder, `/clients` list reading through `scopedDb`
-- [x] **Seg 4** — create-client dialog + capability-guarded server action (currency pre-filled from org default); seed v1 (two clients); first `src/features/` folder (clients) per the feature-first layout
-- [ ] **Seg 5** — exit-criteria sweep + changelog + wrap-up
+Nothing in flight. **M1 awaits human review + merge** of `feature/m1-vertical-slice` (hands-on exit check: log in as seeded admin → New client → see it listed → sign out → redirected to login).
 
 ## Next up (ordered)
 
-1. **Finish M1** per the checklist above. Exit: log in as the seeded admin, create a client, see it listed, log out and get redirected — with the authz/scoping tests green. Then you review/merge.
-2. **M2 — Projects & tasks:** client detail page, project CRUD (billing type/method per D6), global task list, project↔task assignments; seed v2.
+1. **You review + merge** `feature/m1-vertical-slice` into `develop` after the hands-on exit check above.
+2. **M2 — Projects & tasks:** client detail page, project CRUD (billing type/method per D6), global task list, project↔task assignments; seed v2. Same segmented rhythm on a fresh `feature/` branch off `develop`.
 
 ## Open questions / deferred decisions
 

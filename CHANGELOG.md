@@ -6,4 +6,7 @@ All notable user-facing changes to Conflux. Format follows [Keep a Changelog](ht
 
 ### Added
 
-- Sign in / sign out with the seeded demo account (`admin@conflux.test`), with a shell home page showing who is signed in.
+- Sign in / sign out with the seeded demo account (`admin@conflux.test`); logged-out visitors are redirected to the sign-in page.
+- App shell: sidebar navigation (Dashboard, Clients) showing the organization and signed-in user, with sign-out.
+- Clients: list of active clients and a "New client" dialog (name, contact person, email, billing address, currency pre-filled from the organization default).
+- Demo data: two sample clients (Acme Corporation in USD, Globex GmbH in EUR) seeded for the walkthrough.
