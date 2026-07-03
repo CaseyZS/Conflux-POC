@@ -4,6 +4,7 @@ import { requireActor } from "@/lib/auth";
 import { requireCapability } from "@/lib/authz";
 import { getInvoiceView } from "@/features/invoices/queries";
 import { InvoiceStatusBadge } from "@/features/invoices/status-badge";
+import { InvoiceDocument } from "@/features/invoices/invoice-document";
 import { DraftSettingsForm } from "@/features/invoices/draft-settings-form";
 import { SelectionEditor } from "@/features/invoices/selection-editor";
 import { ManualLineDialog } from "@/features/invoices/manual-line-dialog";
@@ -22,9 +23,9 @@ import {
 } from "@/components/ui/table";
 
 // One page for both lifecycle halves: a draft renders as an editor over
-// live-derived lines (G5 — nothing is stored until finalize), a finalized
-// invoice renders read-only from its snapshot. The polished document view +
-// PDF is M5; this page is the working view.
+// live-derived lines (G5 — nothing is stored until finalize); a finalized
+// invoice renders through the polished InvoiceDocument (the same component the
+// PDF prints, G9).
 export default async function InvoicePage({
   params,
 }: {
@@ -65,6 +66,28 @@ export default async function InvoicePage({
         </div>
       </div>
 
+      {draft ? (
+        <DraftWorkspace invoice={invoice} />
+      ) : (
+        <div className="mt-6">
+          <InvoiceDocument invoice={invoice} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The draft editing surface: the live-derived bill-to/from card, the line
+// table with manual-line editing, the running totals, and the two editors
+// (settings + which projects feed the invoice). All of it disappears at
+// finalize, replaced by the read-only document above.
+function DraftWorkspace({
+  invoice,
+}: {
+  invoice: NonNullable<Awaited<ReturnType<typeof getInvoiceView>>>;
+}) {
+  return (
+    <>
       <div className="mt-6 grid gap-4 rounded-lg border p-4 sm:grid-cols-3">
         <div>
           <h2 className="text-xs font-medium uppercase text-muted-foreground">
@@ -121,24 +144,20 @@ export default async function InvoicePage({
               <dd>{invoice.currency}</dd>
             </div>
           </dl>
-          {draft && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Pulled live until finalized.
-            </p>
-          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            Pulled live until finalized.
+          </p>
         </div>
       </div>
 
       <section className="mt-8">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium">Lines</h2>
-          {draft && (
-            <ManualLineDialog
-              invoiceId={invoice.id}
-              currency={invoice.currency}
-              projects={invoice.attributableProjects}
-            />
-          )}
+          <ManualLineDialog
+            invoiceId={invoice.id}
+            currency={invoice.currency}
+            projects={invoice.attributableProjects}
+          />
         </div>
 
         {invoice.lines.length === 0 ? (
@@ -156,7 +175,7 @@ export default async function InvoicePage({
                 <TableHead className="w-20 text-right">Qty</TableHead>
                 <TableHead className="w-28 text-right">Rate</TableHead>
                 <TableHead className="w-28 text-right">Amount</TableHead>
-                {draft && <TableHead className="w-16" />}
+                <TableHead className="w-16" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -179,18 +198,16 @@ export default async function InvoicePage({
                   <TableCell className="text-right tabular-nums">
                     {line.amountLabel}
                   </TableCell>
-                  {draft && (
-                    <TableCell className="text-right">
-                      {line.source === "manual" && (
-                        <ManualLineDialog
-                          invoiceId={invoice.id}
-                          currency={invoice.currency}
-                          projects={invoice.attributableProjects}
-                          line={line}
-                        />
-                      )}
-                    </TableCell>
-                  )}
+                  <TableCell className="text-right">
+                    {line.source === "manual" && (
+                      <ManualLineDialog
+                        invoiceId={invoice.id}
+                        currency={invoice.currency}
+                        projects={invoice.attributableProjects}
+                        line={line}
+                      />
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -223,40 +240,30 @@ export default async function InvoicePage({
         </div>
       </section>
 
-      {draft ? (
-        <>
-          <section className="mt-8 rounded-lg border p-4">
-            <h2 className="text-lg font-medium">Invoice settings</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Grouping and detail change how the time lines above present —
-              the same entries, itemized differently.
-            </p>
-            <div className="mt-4">
-              <DraftSettingsForm invoice={invoice} />
-            </div>
-          </section>
+      <section className="mt-8 rounded-lg border p-4">
+        <h2 className="text-lg font-medium">Invoice settings</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Grouping and detail change how the time lines above present — the
+          same entries, itemized differently.
+        </p>
+        <div className="mt-4">
+          <DraftSettingsForm invoice={invoice} />
+        </div>
+      </section>
 
-          <section className="mt-8 rounded-lg border p-4">
-            <h2 className="text-lg font-medium">What feeds this invoice</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Unbilled billable time from checked hourly projects and
-              once-only fixed fees. Time logged later flows in until finalize.
-            </p>
-            <div className="mt-4">
-              <SelectionEditor
-                invoiceId={invoice.id}
-                choices={invoice.selectionChoices}
-              />
-            </div>
-          </section>
-        </>
-      ) : (
-        invoice.footer && (
-          <p className="mt-8 whitespace-pre-line border-t pt-4 text-sm text-muted-foreground">
-            {invoice.footer}
-          </p>
-        )
-      )}
-    </div>
+      <section className="mt-8 rounded-lg border p-4">
+        <h2 className="text-lg font-medium">What feeds this invoice</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Unbilled billable time from checked hourly projects and once-only
+          fixed fees. Time logged later flows in until finalize.
+        </p>
+        <div className="mt-4">
+          <SelectionEditor
+            invoiceId={invoice.id}
+            choices={invoice.selectionChoices}
+          />
+        </div>
+      </section>
+    </>
   );
 }
