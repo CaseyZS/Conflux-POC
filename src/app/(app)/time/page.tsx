@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { requireActor } from "@/lib/auth";
 import { addDays, formatDayHeading, isIsoDate, todayLocal } from "@/lib/dates";
 import { formatHours } from "@/features/time/duration";
-import { listDayEntries } from "@/features/time/queries";
+import { TimeEntryDialog } from "@/features/time/entry-dialog";
+import { listAssignmentOptions, listDayEntries } from "@/features/time/queries";
 import {
   Table,
   TableBody,
@@ -31,7 +32,10 @@ export default async function TimePage({
   const today = todayLocal();
   const date = dateParam ?? today;
 
-  const entries = await listDayEntries(actor, date);
+  const [entries, projectOptions] = await Promise.all([
+    listDayEntries(actor, date),
+    listAssignmentOptions(actor),
+  ]);
   const totalLabel = formatHours(
     entries.reduce((sum, entry) => sum + entry.durationSeconds, 0),
   );
@@ -70,9 +74,12 @@ export default async function TimePage({
             </span>
           )}
         </h2>
-        {entries.length > 0 && (
-          <p className="text-sm text-muted-foreground">Total {totalLabel}</p>
-        )}
+        <div className="flex items-center gap-4">
+          {entries.length > 0 && (
+            <p className="text-sm text-muted-foreground">Total {totalLabel}</p>
+          )}
+          <TimeEntryDialog date={date} today={today} projects={projectOptions} />
+        </div>
       </div>
 
       {entries.length === 0 ? (
@@ -90,6 +97,9 @@ export default async function TimePage({
               <TableHead>Note</TableHead>
               <TableHead>Billing</TableHead>
               <TableHead className="text-right">Hours</TableHead>
+              <TableHead>
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -110,6 +120,14 @@ export default async function TimePage({
                 </TableCell>
                 <TableCell className="text-right font-medium tabular-nums">
                   {entry.hoursLabel}
+                </TableCell>
+                <TableCell className="text-right">
+                  <TimeEntryDialog
+                    date={date}
+                    today={today}
+                    projects={projectOptions}
+                    entry={entry}
+                  />
                 </TableCell>
               </TableRow>
             ))}
