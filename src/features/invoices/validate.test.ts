@@ -13,9 +13,8 @@ describe("parseDraftSettings — invoice number (numeric tail only)", () => {
   });
 
   it("pads and preserves the value the user typed", () => {
-    expect(parse({ number: "12" }).ok && parse({ number: "12" }).data.number).toBe(
-      "INV-0012",
-    );
+    const r12 = parse({ number: "12" });
+    expect(r12.ok && r12.data.number).toBe("INV-0012");
     // A padded input is read by value, then re-padded.
     const r = parse({ number: "0012" });
     expect(r.ok && r.data.number).toBe("INV-0012");

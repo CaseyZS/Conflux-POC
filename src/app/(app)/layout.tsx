@@ -1,4 +1,5 @@
 import { requireActor, signOut } from "@/lib/auth";
+import { can } from "@/lib/authz";
 import { scopedDb } from "@/lib/scope";
 import { findRunningEntry } from "@/features/time/queries";
 import { RunningTimerWidget } from "@/features/time/timer-controls";
@@ -23,7 +24,7 @@ export default async function AppLayout({
           <p className="text-lg font-semibold tracking-tight">Conflux</p>
           <p className="truncate text-xs text-muted-foreground">{org?.name}</p>
         </div>
-        <NavLinks />
+        <NavLinks canManageSettings={can(actor, "company.settings")} />
         <RunningTimerWidget entry={runningEntry} />
         <div className="mt-auto border-t px-4 py-4">
           <p className="truncate text-sm font-medium">{actor.displayName}</p>

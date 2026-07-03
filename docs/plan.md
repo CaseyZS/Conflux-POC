@@ -396,7 +396,7 @@ Routes stay thin (parse params, call the feature, render); logic lives in the fe
 - **`auth.ts` — the auth boundary (G3).** Auth.js (v5) with the Credentials provider verifying against `User.passwordHash` (bcrypt). `currentActor()` resolves session → User → active Membership (+ org, + capability union) — the one object server code asks for "who is calling"; the POC's single membership is picked automatically, so a later org-switcher slots in here without touching callers.
 - **`money.ts` — integer money (G4, D9).** `mulRateByHours`, the invoice pipeline (`lineAmount` → subtotal-as-sum-of-rounded-lines → discount → tax → total, each step **per-line half-up**), and the **single** `formatMoney(amountMinor, currency)` built on `Intl.NumberFormat` with a currency-exponent map (defaulting 2) — no hardcoded `÷100` anywhere. Pure functions, no I/O: the most unit-testable code in the app.
 - **`dates.ts` — date-only days (D11).** Make/parse/compare `"YYYY-MM-DD"` in the **user's local calendar**, week-window math for the timesheet views, and "is this date in the future?" for the warn-and-acknowledge rule. No `Date`-at-UTC-midnight anti-patterns escape this file.
-- **`assets.ts` — asset abstraction (NFR).** `getAsset`/`putAsset` over the `Asset` table now; the S3-style swap later replaces this file's internals only.
+- **`assets.ts` — asset abstraction (NFR).** `getAsset`/`putAsset` over the `Asset` table; the S3-style swap later replaces this file's internals only. **Not yet built** — it arrives with the deferred logo upload (D17), the only asset the POC has.
 
 ### Testing: Vitest
 
@@ -476,7 +476,7 @@ Tracked work becomes money — draft → finalize → paid, with the anti-double
 The stakeholder-facing finish — this milestone is the demo.
 
 - **Invoice document:** one styled component renders both the on-screen view and the PDF (G9) — Playwright's headless Chromium prints the same route to PDF for download. Print CSS tuned so the PDF looks like a real invoice, not a webpage.
-- **Org settings page:** business name, "from" block, logo upload (→ `Asset`), currency/tax/terms defaults, default time display format (H:MM vs decimal hours — requested 2026-07-02; the seam is `features/time/duration.ts`), invoice prefix + next number, footer — the branding that finalize snapshots.
+- **Org settings page:** business name, "from" block, currency/tax/terms defaults, default time display format (H:MM vs decimal hours — requested 2026-07-02; the seam is `features/time/duration.ts`), invoice prefix (next number is derived, highest + 1, per D15), footer — the branding that finalize snapshots. **Logo upload is deferred (D17):** it will live here later, image files only; the `Asset` table + finalize's `logoAssetId` snapshot already exist to receive it.
 - **Polish pass over the demo path only:** consistent theming, empty states, loading/error states, a simple landing/dashboard after login. Polish over robustness, per the requirements' guiding principle.
 - **Demo assets:** the full seed (everything above, plus enough variety that every screen shows real data) and `docs/demo.md` — the scripted walkthrough: login → timesheet → live timer → client/project tour → draft invoice → finalize → PDF.
 - **Exit:** the complete stakeholder demo runs from seed in one sitting, ending with a professional PDF in hand.

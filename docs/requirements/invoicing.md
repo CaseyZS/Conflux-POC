@@ -40,6 +40,7 @@ The "billed" state of a time entry is real state (a link to the invoice that bil
 
 - **Credit notes** — the offset-don't-cancel correction described above.
 - **Email delivery** — at finalize, offer to **send the invoice to chosen client contacts** by email (recipients picked from the client's contacts). The POC output is on-screen + PDF only (see [Output](#output)); no email or gateway.
+- **Logo upload** — the company logo will eventually be **configurable on the Settings page**, accepting **image files only** (PNG/JPEG/WebP/GIF/SVG). The `Asset` table and finalize's logo-by-reference snapshot already exist to receive it; only the upload UI and the `lib/assets.ts` seam remain (deferred — D17).
 
 ## Output
 
@@ -47,7 +48,7 @@ A **polished on-screen invoice** in the browser, plus **PDF download / print**. 
 
 ## Invoice fields
 
-- **Header / branding** — company logo, business name, and "from" details, from the Organization; likewise **snapshotted at finalize** (logo by reference).
+- **Header / branding** — company logo, business name, and "from" details, from the Organization; likewise **snapshotted at finalize** (logo by reference). The business name, "from" block, and invoice defaults (currency, tax, terms, number prefix, footer) are editable on the **Settings** page; the **logo upload is deferred** (see below).
 - **Bill-to** — client name, contact, address; pulled live from the Client record on a draft, then **snapshotted at finalize** so a later client-address change can't rewrite a sent invoice (G5).
 - **Reference block** — the invoice number (pre-filled and editable on the draft; see lifecycle), issue date, **payment terms and a due date derived from them** (terms pre-filled from the Organization default; the **due date is user-overridable** on the draft), and the **client PO number**.
 - **Line items** — per the chosen grouping.
