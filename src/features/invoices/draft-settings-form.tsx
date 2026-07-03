@@ -44,10 +44,18 @@ const TOGGLES: { name: string; label: string }[] = [
 // reflects what's set here. Checkbox/select values submit via hidden inputs
 // (state is the source of truth), the same pattern as the new-invoice form.
 export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
+  // Freeze the draft's field values at first render. Saving revalidates the page
+  // to refresh the derived line-item table above, which re-renders this form
+  // with a fresh `invoice`; uncontrolled inputs keep whatever the user typed
+  // regardless, so pinning defaultValue to this initial snapshot both matches
+  // React's behavior and stops Base UI warning that an uncontrolled field's
+  // defaultValue changed after init. Display-only text below stays live (reads
+  // `invoice`) so the derived due date still updates after a save.
+  const [initial] = useState(invoice);
   // The stored number is the full "INV-0002"; only the digits are editable, so
   // split off the fixed prefix to show it as static text beside the input.
   const { prefix: numberPrefix, seq: numberSeq } = splitInvoiceNumber(
-    invoice.number ?? "",
+    initial.number ?? "",
   );
   const [errors, setErrors] = useState<DraftSettingsFieldErrors>({});
   const [saved, setSaved] = useState(false);
@@ -167,7 +175,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
             id="invoice-issue-date"
             name="issueDate"
             type="date"
-            defaultValue={invoice.issueDate ?? ""}
+            defaultValue={initial.issueDate ?? ""}
             aria-invalid={errors.issueDate ? true : undefined}
           />
           <p className="text-xs text-muted-foreground">
@@ -183,7 +191,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
             id="invoice-terms"
             name="paymentTermsDays"
             inputMode="numeric"
-            defaultValue={String(invoice.paymentTermsDays)}
+            defaultValue={String(initial.paymentTermsDays)}
             aria-invalid={errors.paymentTermsDays ? true : undefined}
           />
           {errors.paymentTermsDays && (
@@ -198,7 +206,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
             id="invoice-due-date"
             name="dueDate"
             type="date"
-            defaultValue={invoice.dueDate ?? ""}
+            defaultValue={initial.dueDate ?? ""}
             aria-invalid={errors.dueDate ? true : undefined}
           />
           <p className="text-xs text-muted-foreground">
@@ -246,7 +254,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
               name="discountValue"
               inputMode="decimal"
               placeholder={discountKind === "percent" ? "10" : "250.00"}
-              defaultValue={invoice.discountValueInput}
+              defaultValue={initial.discountValueInput}
               aria-invalid={errors.discount ? true : undefined}
             />
             {errors.discount && (
@@ -261,7 +269,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
             name="taxRate"
             inputMode="decimal"
             placeholder="8.25"
-            defaultValue={invoice.taxRateInput}
+            defaultValue={initial.taxRateInput}
             aria-invalid={errors.taxRate ? true : undefined}
           />
           <p className="text-xs text-muted-foreground">
@@ -278,7 +286,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
         <Input
           id="invoice-subject"
           name="subject"
-          defaultValue={invoice.subject ?? ""}
+          defaultValue={initial.subject ?? ""}
           placeholder="Shown above the line items (e.g. Website redesign — June 2026)"
         />
       </div>
@@ -289,7 +297,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
           <Input
             id="invoice-po"
             name="poNumber"
-            defaultValue={invoice.poNumber ?? ""}
+            defaultValue={initial.poNumber ?? ""}
             placeholder="Client's purchase order"
           />
         </div>
@@ -299,7 +307,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
             id="invoice-footer"
             name="footer"
             rows={2}
-            defaultValue={invoice.footer ?? ""}
+            defaultValue={initial.footer ?? ""}
             placeholder="Notes / terms shown at the bottom"
           />
         </div>

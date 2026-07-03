@@ -15,6 +15,13 @@ import type { OrgSettingsFieldErrors } from "./validate";
 // inputs (defaultValue) — the server action re-validates and returns field
 // errors, the same pattern as the client and draft-settings forms.
 export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
+  // Freeze the settings at first render. Saving revalidates /settings, which
+  // re-renders this form with a fresh `settings`; uncontrolled inputs keep what
+  // the user typed regardless, so pinning defaultValue to this initial snapshot
+  // matches React's behavior and stops Base UI warning that an uncontrolled
+  // field's defaultValue changed after init. The next-number preview below stays
+  // live (reads `settings`) so it reflects a just-saved prefix.
+  const [initial] = useState(settings);
   const [errors, setErrors] = useState<OrgSettingsFieldErrors>({});
   const [saved, setSaved] = useState(false);
 
@@ -37,7 +44,7 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
           <Input
             id="org-name"
             name="name"
-            defaultValue={settings.name}
+            defaultValue={initial.name}
             aria-invalid={errors.name ? true : undefined}
           />
           {errors.name && (
@@ -51,7 +58,7 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
             id="org-from"
             name="fromDetails"
             rows={4}
-            defaultValue={settings.fromDetails}
+            defaultValue={initial.fromDetails}
             placeholder={"Address, email, phone — shown in the invoice header"}
           />
           <p className="text-xs text-muted-foreground">
@@ -66,7 +73,7 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
           <Input
             id="org-currency"
             name="defaultCurrency"
-            defaultValue={settings.defaultCurrency}
+            defaultValue={initial.defaultCurrency}
             className="uppercase"
             aria-invalid={errors.defaultCurrency ? true : undefined}
           />
@@ -85,7 +92,7 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
             name="defaultTaxRate"
             inputMode="decimal"
             placeholder="8.25"
-            defaultValue={settings.defaultTaxRateInput}
+            defaultValue={initial.defaultTaxRateInput}
             aria-invalid={errors.defaultTaxRate ? true : undefined}
           />
           <p className="text-xs text-muted-foreground">Empty = no default tax.</p>
@@ -100,7 +107,7 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
             id="org-terms"
             name="defaultPaymentTermsDays"
             inputMode="numeric"
-            defaultValue={settings.defaultPaymentTermsDays}
+            defaultValue={initial.defaultPaymentTermsDays}
             aria-invalid={errors.defaultPaymentTermsDays ? true : undefined}
           />
           <p className="text-xs text-muted-foreground">
@@ -120,7 +127,7 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
           <Input
             id="org-prefix"
             name="invoiceNumberPrefix"
-            defaultValue={settings.invoiceNumberPrefix}
+            defaultValue={initial.invoiceNumberPrefix}
             className="w-40"
             aria-invalid={errors.invoiceNumberPrefix ? true : undefined}
           />
@@ -145,7 +152,7 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
             id="org-footer"
             name="invoiceFooter"
             rows={2}
-            defaultValue={settings.invoiceFooter}
+            defaultValue={initial.invoiceFooter}
             placeholder="Default notes / terms at the bottom of an invoice"
           />
         </div>
