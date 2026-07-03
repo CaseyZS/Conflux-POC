@@ -97,6 +97,43 @@ export async function listClientProjects(
   });
 }
 
+// The org-wide index's view: every project with its client context. Currency
+// rides in from each project's own client, so mixed-currency orgs read right.
+export type OrgProjectRow = {
+  id: string;
+  name: string;
+  archived: boolean;
+  clientId: string;
+  clientName: string;
+  clientArchived: boolean;
+  billingSummary: string;
+};
+
+export async function listOrgProjects(actor: Actor): Promise<OrgProjectRow[]> {
+  const showRates = can(actor, "rate.view");
+  const projects = await scopedDb(actor.organizationId).project.findMany({
+    include: { client: true },
+    orderBy: [{ client: { name: "asc" } }, { name: "asc" }],
+  });
+
+  return projects.map((project) => ({
+    id: project.id,
+    name: project.name,
+    archived: project.archivedAt !== null,
+    clientId: project.clientId,
+    clientName: project.client.name,
+    clientArchived: project.client.archivedAt !== null,
+    billingSummary: billingSummary(
+      project.billingType as BillingType,
+      project.billingMethod as BillingMethod | null,
+      project.hourlyRateMinor,
+      project.fixedFeeMinor,
+      project.client.currency,
+      showRates,
+    ),
+  }));
+}
+
 // The detail page's view: a ProjectRow (so the shared edit dialog slots in)
 // plus the client context the page needs for its backlink and currency.
 export type ProjectDetail = ProjectRow & {

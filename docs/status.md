@@ -4,10 +4,10 @@ The single source of "where we are and what's next," so any session can resume w
 
 ## Snapshot
 
-- **Date:** 2026-07-02
-- **Phase:** **M3 — Time tracking** built on `feature/m3-time-tracking` (plan.md § M3) — all segments done and green; awaiting the maintainer's hands-on exit check + merge.
-- **Git:** `develop` holds requirements + plan + M0–M2; working branch `feature/m3-time-tracking` (publishing branches stays with the maintainer).
-- **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`) and build/browse clients → projects → assigned tasks, then track time in the day view (`/time`) and weekly grid (`/time/week`); seed v3 provides the full demo structure plus a working week of time entries that re-seeding slides onto the current week.
+- **Date:** 2026-07-03
+- **Phase:** **Projects index** (post-M3 side item) built on `feature/projects-index` — green; awaiting review + merge. Next milestone: **M4 — Invoicing**.
+- **Git:** `develop` holds requirements + plan + M0–M3; working branch `feature/projects-index` (publishing branches stays with the maintainer).
+- **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`) and build/browse clients → projects → assigned tasks (org-wide index at `/projects`), then track time in the day view (`/time`) and weekly grid (`/time/week`); seed v3 provides the full demo structure plus a working week of time entries that re-seeding slides onto the current week.
 
 ## Done
 
@@ -24,24 +24,16 @@ The single source of "where we are and what's next," so any session can resume w
 - **M1 — First vertical slice built** (2026-07-02, `feature/m1-vertical-slice`, segs 0–5): the one-way-door seams proven on one path — `scopedDb` org-scoping extension (G1) with pure `scopeArgs` + tests, `can()`/`requireCapability` (G2/G10) + `currentActor()` (G3) with tests; route guard at `src/proxy.ts` (cookie-presence redirect; authoritative check is `requireActor()` in the `(app)` layout); styled login; app shell (sidebar nav, org + user identity, sign-out); `/clients` list through `scopedDb`; first `src/features/` folder — create-client dialog + `client.manage`-guarded server action, currency pre-filled from org default; seed v1 (Acme/USD, Globex/EUR). 42 unit tests, lint/build/live-smoke green. Convention set: Prisma `create` types still require `organizationId`, call sites pass the actor's and `scopeArgs` stamps over it (documented in `scope.ts`).
 - **M2 — Projects & tasks built and merged** (2026-07-02, `feature/m2-projects-tasks`, segs 0–5): client detail page with edit + archive/unarchive (G12); projects under a client (billing-type selector; hourly → per-project/per-task method + rate per D6, fixed fee → amount; per-person/flat visible but disabled); org-wide task list (default-billable flag, archive, duplicate names arbitrated by the DB unique constraint → friendly P2002 error); project detail page with the assignment editor (assign/retire via `active` keeping the (project, task) slot, per-assignment billable override seeded from the task default, per-task rates only on hourly+per-task projects, re-derived server-side); all rate display through the projects read layer (G10 seam for `rate.view`); seed v2 (4 projects across all billing shapes, 4 tasks, 11 mixed assignments incl. a retired one). 73 unit tests, 32-check live smoke, lint/build green. Exit criterion met: the client → project → assigned-tasks structure is buildable entirely in the UI.
 
+- **M3 — Time tracking built and merged** (2026-07-02/03, `feature/m3-time-tracking`, segs 0–5): the dates seam (`lib/dates.ts`, local-calendar "YYYY-MM-DD" per D11); day view (`/time`) with manual create/edit/delete via a project→task picker, billability derived from the assignment, future dates warn-and-acknowledge; live timer (single-timer app policy G6/D5, D12 resume with fresh-vs-continue — skipped same-day, sidebar widget, running entries locked until stopped); weekly grid (`/time/week`, Day|Week tabs, editable H:MM cells, row/day/week totals, add-row picker, ambiguous cells defer to the day view); H:MM as the default duration display (inputs accept `1:30` and `1.5`); seed v3 — a demo working week dated by offset-from-today that re-seeding slides onto the current week. 110 unit tests, live smokes 24 (timer) + 20 (week) + 40 (regression), lint/build green; exit criterion (track a real day live + retroactively, both views browsable, exactly one timer) accepted hands-on and merged.
+
 ## In progress
 
-**M3 — Time tracking** on `feature/m3-time-tracking` (plan.md § M3). Segments — each lands committed and green (lint + tests + build + live smoke):
-
-- [x] **Seg 0** — open the milestone: this checklist + status refresh.
-- [x] **Seg 1** — the dates seam (`lib/dates.ts`: local-calendar "YYYY-MM-DD" day per D11, prev/next/today arithmetic, week windows; unit tests) + day view page (`/time` in the sidebar): one date's entries as a read-only list through a `features/time` read layer, billability shown as derived from the assignment.
-- [x] **Seg 2** — manual entry: create/edit/delete on the day view via a project→task picker (active assignments only), decimal-hours duration, note, date; future dates warn-and-acknowledge.
-- [x] **Seg 3** — live timer: start fresh or from an entry, starting one stops the running one (app-layer policy, G6/D5), elapsed ticks live (day view + an always-visible sidebar widget), stop collapses into `durationSeconds`; resume offers new pre-filled entry (encouraged) or continue-the-original (accumulates, keeps its day — D12). Start-timer lives on today only (a timer measures now); running entries can't be edited until stopped.
-- [x] **Seg 4** — weekly grid (`/time/week`, Day|Week tabs on both views): one row per assignment, editable H:MM cells per day committing on blur/Enter (create/update; clearing a cell deletes), row/day/grand totals, an add-row picker for bulk entry. Ambiguous cells (several entries, a running timer, invoiced time) render read-only and defer to the day view; a future day asks for a second Enter (the grid's warn-and-acknowledge). Rolled in the 2026-07-02 display feedback first: **H:MM replaces decimal hours** as the default duration display (input accepts both `1:30` and `1.5`), the live clock drops seconds, and a same-day resume skips the fresh/continue chooser (both paths land on the same day — it just continues). Decimal hours return as a choice when the M5 settings page adds the time-format preference.
-- [x] **Seg 5** — seed v3: eight time entries across five live assignments and both clients, dated by **offset from today** so the idempotent re-seed slides the demo week onto the current week (today included, none in the future, none running — the entries' upsert alone writes the recomputed date on update). Changelog updated (day view, timer, weekly grid, H:MM display, demo week). The live smokes moved their fixtures and emptiness probes to a fixed seed-free week (2020-01-06) since today's week is now always populated; a new check verifies the seeded week renders in the grid. Exit-criteria sweep green: day tracked live and retroactively (timer + manual-entry smokes), both views browsable (day + week smokes), single-timer policy unit-tested and smoke-checked.
-
-**M3 verification (final):** lint clean · 110 unit tests · production build (10 routes) · live smokes 24 (timer) + 20 (week) + 40 (M2 regression).
+**Projects index** (side item requested 2026-07-02, `feature/projects-index`): an org-wide `/projects` list across clients — project, client, and billing-summary columns through the M2 projects read layer (new `listOrgProjects`, keeping the `rate.view` gate in the one seam), archived projects in a muted section, Projects link in the sidebar. Creation stays on the client's page and management on the project detail page; the index is a pure read. **Built and green** (lint · 110 unit tests · build, 11 routes · regression smoke 46 checks incl. 6 new index checks); awaiting review + merge.
 
 ## Next up (ordered)
 
-1. Finish the M3 segments above; **you review + merge** `feature/m3-time-tracking` after the hands-on exit check (track a real day live and retroactively; both timesheet views browsable; exactly one timer can run).
-2. **Projects index page** (requested 2026-07-02) — small side item on its own `feature/projects-index` branch off `develop` after M3 merges: a top-level `/projects` list across clients + sidebar link, reusing the M2 projects read layer. Not part of any milestone; nothing depends on it.
-3. **M4 — Invoicing lifecycle** per `docs/plan.md`.
+1. **You review + merge** `feature/projects-index` (quick look: `/projects` lists all seeded projects with client + billing columns).
+2. **M4 — Invoicing lifecycle** per `docs/plan.md`.
 
 ## Open questions / deferred decisions
 
