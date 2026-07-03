@@ -5,9 +5,9 @@ The single source of "where we are and what's next," so any session can resume w
 ## Snapshot
 
 - **Date:** 2026-07-03
-- **Phase:** **M4 — Invoicing lifecycle** in progress on `feature/m4-invoicing` (plan.md § M4).
+- **Phase:** **M4 — Invoicing lifecycle** built on `feature/m4-invoicing` — green; awaiting review + merge. Next milestone: **M5 — Invoice output & demo polish**.
 - **Git:** `develop` holds requirements + plan + M0–M3 + the projects index; working branch `feature/m4-invoicing` (publishing branches stays with the maintainer).
-- **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`) and build/browse clients → projects → assigned tasks (org-wide index at `/projects`), then track time in the day view (`/time`) and weekly grid (`/time/week`); seed v3 provides the full demo structure plus a working week of time entries that re-seeding slides onto the current week.
+- **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`), build/browse clients → projects → assigned tasks, track time in the day (`/time`) and week (`/time/week`) views, then turn it into money at `/invoices`: draft → grouping/manual lines/discount/tax → Finalize → Mark as paid. Seed v4 adds a paid INV-0001 plus an open draft over the demo week's pool.
 
 ## Done
 
@@ -28,20 +28,15 @@ The single source of "where we are and what's next," so any session can resume w
 
 - **Projects index** (side item requested 2026-07-02, `feature/projects-index`, merged 2026-07-03): an org-wide `/projects` list across clients — project, client, and billing-summary columns through the M2 projects read layer (new `listOrgProjects`, keeping the `rate.view` gate in the one seam), archived projects in a muted section, Projects link in the sidebar. Creation stays on the client's page and management on the project detail page; the index is a pure read.
 
+- **M4 — Invoicing lifecycle built** (2026-07-03, `feature/m4-invoicing`, segs 0–5): the invoice money pipeline in `lib/money.ts` (integer half-up rounding, percent-XOR-flat discount clamped to the subtotal, single tax after discount — 15 tests incl. the lines-sum-to-total invariant); `/invoices` list + new-invoice flow (active client → project selection with unbilled H:MM / fee amounts → draft with `InvoiceProject` rows, org defaults copied in); the draft editor — time lines derived live from the unbilled pool (billable, hourly, not running, never billed) through pure `derive.ts` (task grouping splits by rate like person does — every line carries one rate; person gets the "Bob (Design)" parenthetical when rate-split; summary collapses to hours × rate when uniform, 1 × amount when mixed; detailed keeps notes; date/person/task/note toggles annotate without stuttering — 14 tests), fixed-fee lines, manual lines (thousandth quantities, optional project attribution), settings (grouping/toggles, issue + due dates with due derived from terms until overridden, discount, tax, PO, footer), delete-draft; **finalize** in one transaction (`finalize.ts`, shared with the seed): gapless `INV-####` consumed from the org counter, snapshot of lines (print positions), totals, currency, bill-to, from + logo-by-reference, anti-double-bill links for time entries and fixed fees, with the pool predicate re-run inside the tx; sent→paid as the second forward-only flag; billed entries render locked in the day view. Status vocabulary settled: the stored lifecycle is the schema's three states — **Finalize is the draft→sent transition**. Seed v4: paid INV-0001 over the dedicated Brand Refresh history (billed through the real finalize; the seed never touches billed entries on re-run) + an open Acme draft with manual line/8.25% tax/PO. 141 unit tests; live checks 23 (finalize domain: snapshot fields, five entries linked, second finalize refused, second draft finds an empty pool, fee link, counter) + 12 (finalized view + day-view locks) + 44 (regression incl. exact derived amounts); lint/build green.
+
 ## In progress
 
-**M4 — Invoicing lifecycle** on `feature/m4-invoicing` (plan.md § M4). Status vocabulary settled at open: the stored lifecycle is the schema's three states (`draft → sent → paid`) — **Finalize is the draft→sent transition** (assigns the gapless number, snapshots money/bill-to/from, links billed entries + fees); "mark as paid" is the second manual step. Segments — each lands committed and green (lint + tests + build + live smoke):
-
-- [x] **Seg 0** — open the milestone: this checklist + status refresh.
-- [x] **Seg 1** — the invoice money pipeline in `lib/money.ts` (G4/D9): integer half-up rounding helpers, `lineAmountMinor` (quantityMilli × rate), percent-of-bps, and `invoiceTotals` (subtotal = sum of rounded lines → discount percent-XOR-flat → tax after discount → total); unit tests (odd rates, 8.25% tax, discount-then-tax ordering, lines-sum-to-total invariant).
-- [x] **Seg 2** — invoices list + new-invoice flow: `/invoices` in the sidebar (number/client/status/total columns), "New invoice" picks the client and which projects feed it (time and/or fixed fee → `InvoiceProject` rows) → draft; `features/invoices` scaffolding (validate/queries/actions) guarded by `invoice.manage`.
-- [x] **Seg 3** — draft editor: time lines derived live from the unbilled pool (`invoiceId IS NULL`, billable, hourly projects, running/zero entries excluded) per the chosen grouping (task / person-split-by-rate / summary / detailed) + detail toggles (`derive.ts` + tests); fixed-fee lines; manual lines with optional project attribution; discount/tax/PO/issue-due dates (due derived from terms until overridden)/footer; totals through the pipeline only; delete draft.
-- [x] **Seg 4** — finalize + lifecycle: one-transaction finalize (gapless number from org prefix + counter, snapshot lines/totals/currency/bill-to/from-branding, link time entries + any fixed fees — the pool predicate re-runs inside the tx so nothing can be double-billed); finalized view reads only the snapshot; sent→paid transition; finalized = immutable (no void/credit in the POC).
-- [ ] **Seg 5** — seed v4 (one finalized invoice on last week's dedicated entries + one open draft), exit-criteria sweep, changelog, wrap-up.
+Nothing in flight — M4 is built and green on `feature/m4-invoicing`, awaiting review + merge; M5 hasn't been opened yet.
 
 ## Next up (ordered)
 
-1. Finish the M4 segments above; **you review + merge** `feature/m4-invoicing` after the hands-on exit check (full draft→finalize→paid walkthrough in the UI; a finalized entry can't be pulled into a second invoice).
+1. **You review + merge** `feature/m4-invoicing` after the hands-on exit check: open the seeded Acme draft (Invoices → Draft), flip the grouping/detail toggles and watch the lines re-derive, add or edit a manual line, then **Finalize** (expect INV-0002) and **Mark as paid**; confirm a fresh Acme invoice now finds no unbilled time (nothing double-bills) and that billed entries show "On invoice" in the day view.
 2. **M5 — Invoice output & demo polish** per `docs/plan.md`.
 
 ## Open questions / deferred decisions
