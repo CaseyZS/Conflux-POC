@@ -10,6 +10,7 @@ import { SelectionEditor } from "@/features/invoices/selection-editor";
 import { ManualLineDialog } from "@/features/invoices/manual-line-dialog";
 import { DeleteDraftButton } from "@/features/invoices/delete-draft-button";
 import { DownloadPdfButton } from "@/features/invoices/download-pdf-button";
+import { PreviewButton } from "@/features/invoices/preview-button";
 import {
   FinalizeButton,
   MarkPaidButton,
@@ -57,6 +58,7 @@ export default async function InvoicePage({
         <div className="flex items-center gap-2">
           {draft ? (
             <>
+              <PreviewButton invoiceId={invoice.id} />
               <DeleteDraftButton invoiceId={invoice.id} />
               <FinalizeButton invoiceId={invoice.id} />
             </>

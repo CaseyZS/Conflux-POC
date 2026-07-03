@@ -32,3 +32,4 @@ All notable user-facing changes to Conflux. Format follows [Keep a Changelog](ht
 - Invoices: an optional subject line, shown just above the line-items table (set in the draft's settings).
 - Invoices: payment terms display in standard net-terms language ("NET30", or "Due on receipt" for zero-day terms) instead of "30 days".
 - Invoices: when a line item shows its date, the date now leads the line in YYYY/MM/DD format.
+- Invoices: a "Preview" button on drafts opens the polished invoice document exactly as it will look — stamped DRAFT, with no number assigned — so you can review it before finalizing.

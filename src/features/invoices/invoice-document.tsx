@@ -9,19 +9,21 @@ import type { InvoiceView } from "./queries";
 // renders it outside the app shell. All money/quantity/date strings arrive
 // pre-formatted from getInvoiceView (G4/G10) — this file only lays them out.
 
-// A "PAID" / "SENT" wordmark by the number — useful on a printed copy, and it
-// costs nothing to carry into the PDF.
+// A status wordmark by the number. DRAFT (amber) marks a preview so it can
+// never be mistaken for a real, numbered invoice; PAID/SENT read on a printed
+// copy — and all of them cost nothing to carry into the PDF.
 const STATUS_STAMP: Record<
   InvoiceView["status"],
-  { label: string; className: string } | null
+  { label: string; className: string }
 > = {
-  draft: null, // the document view is never shown for a draft
+  draft: { label: "DRAFT", className: "text-amber-600 ring-amber-600/30" },
   sent: { label: "SENT", className: "text-sky-600 ring-sky-600/30" },
   paid: { label: "PAID", className: "text-emerald-600 ring-emerald-600/30" },
 };
 
 export function InvoiceDocument({ invoice }: { invoice: InvoiceView }) {
   const stamp = STATUS_STAMP[invoice.status];
+  const draft = invoice.status === "draft";
 
   return (
     <article className="invoice-document mx-auto w-full max-w-3xl bg-white p-10 text-zinc-900 shadow-sm ring-1 ring-zinc-200 print:max-w-none print:p-0 print:shadow-none print:ring-0">
@@ -41,16 +43,18 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceView }) {
           <h1 className="text-3xl font-bold uppercase tracking-[0.2em] text-zinc-400">
             Invoice
           </h1>
-          <p className="mt-1 text-lg font-semibold tabular-nums">
-            {invoice.number}
-          </p>
-          {stamp && (
-            <span
-              className={`mt-2 inline-block rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ring-1 ${stamp.className}`}
-            >
-              {stamp.label}
-            </span>
+          {draft ? (
+            <p className="mt-1 text-sm text-zinc-400">Not yet numbered</p>
+          ) : (
+            <p className="mt-1 text-lg font-semibold tabular-nums">
+              {invoice.number}
+            </p>
           )}
+          <span
+            className={`mt-2 inline-block rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ring-1 ${stamp.className}`}
+          >
+            {stamp.label}
+          </span>
         </div>
       </header>
 
