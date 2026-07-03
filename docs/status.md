@@ -29,7 +29,7 @@ The single source of "where we are and what's next," so any session can resume w
 **M3 — Time tracking** on `feature/m3-time-tracking` (plan.md § M3). Segments — each lands committed and green (lint + tests + build + live smoke):
 
 - [x] **Seg 0** — open the milestone: this checklist + status refresh.
-- [ ] **Seg 1** — the dates seam (`lib/dates.ts`: local-calendar "YYYY-MM-DD" day per D11, prev/next/today arithmetic, week windows; unit tests) + day view page (`/time` in the sidebar): one date's entries as a read-only list through a `features/time` read layer, billability shown as derived from the assignment.
+- [x] **Seg 1** — the dates seam (`lib/dates.ts`: local-calendar "YYYY-MM-DD" day per D11, prev/next/today arithmetic, week windows; unit tests) + day view page (`/time` in the sidebar): one date's entries as a read-only list through a `features/time` read layer, billability shown as derived from the assignment.
 - [ ] **Seg 2** — manual entry: create/edit/delete on the day view via a project→task picker (active assignments only), decimal-hours duration, note, date; future dates warn-and-acknowledge.
 - [ ] **Seg 3** — live timer: start fresh or from an entry, starting one stops the running one (app-layer policy, G6/D5), elapsed ticks live, stop collapses into `durationSeconds`; resume offers new pre-filled entry (encouraged) or continue-the-original (accumulates, keeps its day — D12).
 - [ ] **Seg 4** — weekly grid: projects×days cells for review and bulk entry.
