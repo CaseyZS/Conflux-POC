@@ -5,8 +5,8 @@ The single source of "where we are and what's next," so any session can resume w
 ## Snapshot
 
 - **Date:** 2026-07-02
-- **Phase:** **M2 — Projects & tasks** done and merged. Next: **M3 — Time tracking** on a fresh `feature/` branch off `develop`.
-- **Git:** `develop` holds requirements + plan + M0–M2 (local; publishing branches stays with the maintainer).
+- **Phase:** **M3 — Time tracking** in progress on `feature/m3-time-tracking` (plan.md § M3).
+- **Git:** `develop` holds requirements + plan + M0–M2; working branch `feature/m3-time-tracking` (publishing branches stays with the maintainer).
 - **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`) and build/browse clients → projects → assigned tasks; seed v2 provides a full demo structure.
 
 ## Done
@@ -26,11 +26,18 @@ The single source of "where we are and what's next," so any session can resume w
 
 ## In progress
 
-Nothing — M2 is closed and merged; M3 hasn't been opened yet.
+**M3 — Time tracking** on `feature/m3-time-tracking` (plan.md § M3). Segments — each lands committed and green (lint + tests + build + live smoke):
+
+- [x] **Seg 0** — open the milestone: this checklist + status refresh.
+- [ ] **Seg 1** — the dates seam (`lib/dates.ts`: local-calendar "YYYY-MM-DD" day per D11, prev/next/today arithmetic, week windows; unit tests) + day view page (`/time` in the sidebar): one date's entries as a read-only list through a `features/time` read layer, billability shown as derived from the assignment.
+- [ ] **Seg 2** — manual entry: create/edit/delete on the day view via a project→task picker (active assignments only), decimal-hours duration, note, date; future dates warn-and-acknowledge.
+- [ ] **Seg 3** — live timer: start fresh or from an entry, starting one stops the running one (app-layer policy, G6/D5), elapsed ticks live, stop collapses into `durationSeconds`; resume offers new pre-filled entry (encouraged) or continue-the-original (accumulates, keeps its day — D12).
+- [ ] **Seg 4** — weekly grid: projects×days cells for review and bulk entry.
+- [ ] **Seg 5** — seed v3 (a working week of entries across projects, including today), exit-criteria sweep, changelog, wrap-up.
 
 ## Next up (ordered)
 
-1. **M3 — Time tracking:** day view + manual entry, live timer (one running max, D5/D12), weekly grid; seed v3. Fresh `feature/` branch off `develop`.
+1. Finish the M3 segments above; **you review + merge** `feature/m3-time-tracking` after the hands-on exit check (track a real day live and retroactively; both timesheet views browsable; exactly one timer can run).
 2. **M4 — Invoicing lifecycle** per `docs/plan.md`.
 
 ## Open questions / deferred decisions
