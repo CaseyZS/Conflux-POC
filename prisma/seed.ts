@@ -59,7 +59,8 @@ const SEED_CLIENTS = [
     name: "Acme Corporation",
     contactPerson: "Jane Porter",
     email: "ap@acme.test",
-    billingAddress: "Acme Corporation\n42 Industrial Way\nSpringfield, IL 62704",
+    billingAddress:
+      "Acme Corporation\n42 Industrial Way\nSpringfield, IL 62704",
     currency: "USD",
   },
   {
@@ -541,6 +542,7 @@ async function main() {
       id: INVOICE_PAID_ID,
       organizationId: org.id,
       clientId: SEED_CLIENTS[0].id, // Acme
+      number: "INV-0001",
       paymentTermsDays: org.defaultPaymentTermsDays,
       subject: "Brand Refresh — identity & guidelines",
     },
@@ -582,6 +584,7 @@ async function main() {
       id: INVOICE_DRAFT_ID,
       organizationId: org.id,
       clientId: SEED_CLIENTS[0].id, // Acme
+      number: "INV-0002", // pre-filled next number; editable while a draft
       paymentTermsDays: org.defaultPaymentTermsDays,
       taxRateBps: 825, // 8.25%
       poNumber: "PO-2026-117",

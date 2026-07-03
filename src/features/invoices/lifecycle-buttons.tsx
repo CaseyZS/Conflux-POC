@@ -41,10 +41,10 @@ export function FinalizeButton({ invoiceId }: { invoiceId: string }) {
         <DialogHeader>
           <DialogTitle>Finalize this invoice?</DialogTitle>
           <DialogDescription>
-            This assigns the next invoice number, freezes the amounts,
-            addresses, and branding as they are now, and locks the billed
-            time entries so they can never be invoiced again. There is no
-            void or credit path yet — finalized means final.
+            This freezes the invoice number, amounts, addresses, and branding as
+            they are now, and locks the billed time entries so they can never be
+            invoiced again. There is no void or credit path yet — finalized
+            means final.
           </DialogDescription>
         </DialogHeader>
         {message && <p className="text-sm text-destructive">{message}</p>}

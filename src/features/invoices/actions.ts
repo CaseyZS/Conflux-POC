@@ -6,7 +6,11 @@ import { requireActor } from "@/lib/auth";
 import { requireCapability } from "@/lib/authz";
 import { lineAmountMinor } from "@/lib/money";
 import { scopedDb, type ScopedDb } from "@/lib/scope";
-import { finalizeInvoice } from "./finalize";
+import {
+  finalizeInvoice,
+  formatInvoiceNumber,
+  nextInvoiceNumberValue,
+} from "./finalize";
 import {
   parseDraftSettings,
   parseManualLine,
@@ -94,10 +98,19 @@ export async function createInvoice(
   const org = await db.organization.findFirst();
   if (!org) throw new Error("Organization not found.");
 
+  // Pre-fill the number to one past the highest existing (drafts + finalized),
+  // then let the user edit it on the draft — it's frozen at finalize.
+  const existing = await db.invoice.findMany({ select: { number: true } });
+  const number = formatInvoiceNumber(
+    org.invoiceNumberPrefix,
+    nextInvoiceNumberValue(existing.map((i) => i.number)),
+  );
+
   const invoice = await db.invoice.create({
     data: {
       organizationId: actor.organizationId,
       clientId: client.id,
+      number,
       paymentTermsDays: org.defaultPaymentTermsDays,
       taxRateBps: org.defaultTaxRateBps > 0 ? org.defaultTaxRateBps : null,
       footer: org.invoiceFooter,
@@ -137,6 +150,7 @@ export async function updateDraftSettings(
 
   const parsed = parseDraftSettings(
     {
+      number: formData.get("number"),
       grouping: formData.get("grouping"),
       showDate: formData.get("showDate"),
       showPerson: formData.get("showPerson"),
@@ -156,10 +170,32 @@ export async function updateDraftSettings(
   );
   if (!parsed.ok) return { status: "error", errors: parsed.errors };
 
-  await db.invoice.update({ where: { id: invoiceId }, data: parsed.data });
+  try {
+    await db.invoice.update({ where: { id: invoiceId }, data: parsed.data });
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      return {
+        status: "error",
+        errors: { number: "That invoice number is already in use." },
+      };
+    }
+    throw error;
+  }
 
   revalidateInvoice(invoiceId);
   return { status: "success" };
+}
+
+// A Prisma unique-constraint violation (e.g. two invoices with the same
+// number) surfaces as code P2002; detected structurally so this module needn't
+// import the Prisma error class.
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2002"
+  );
 }
 
 // --- Project selections (which projects feed the draft) ---

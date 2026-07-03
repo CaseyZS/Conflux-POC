@@ -250,7 +250,7 @@ The records the demo actually produces: TimeEntry, Invoice, InvoiceLine, plus `I
 - **Quantity as integer millis:** SQLite has no `Decimal`, and floats are banned near money, so line quantity is `quantityMilli` — thousandths of a unit (12.5 h → `12500`; a manual line's "1" → `1000`). Same integer discipline as money, one convention for hours and counts.
 - **Discount is two mutually exclusive columns** (`discountPercentBps` / `discountFlatMinor`) rather than a type+value pair — each column has exactly one unit, so a basis-point value can never be misread as minor units (G4's "unit unmissable" rule). App validation enforces at-most-one.
 - **Referential actions:** everything financial is `Restrict` — including `TimeEntry → Invoice` and the invoice's logo `Asset` reference. `Cascade` only from Invoice down to its own lines and project-selection rows, which implements "deleting a draft removes just the draft and its manual lines" (only drafts are ever deletable, by app policy). Line order gets an explicit `position` — print order is part of the financial record.
-- **Gapless invoice numbers:** finalize runs in one transaction that reads + increments `Organization.invoiceNextNumber` and writes the snapshot — the number is assigned nowhere else.
+- **Invoice numbers (revised — D15):** the number is pre-filled on the draft as one past the highest existing number (under the org prefix) and stays editable, then freezes at finalize. Unique per org (the `@@unique` index bars duplicates) but not strictly gapless; `invoiceNextNumber` is now vestigial.
 
 ### Models
 

@@ -79,6 +79,23 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
 
   return (
     <form action={submit} className="grid gap-4">
+      <div className="grid gap-2 sm:max-w-xs">
+        <Label htmlFor="invoice-number">Invoice number</Label>
+        <Input
+          id="invoice-number"
+          name="number"
+          defaultValue={invoice.number ?? ""}
+          aria-invalid={errors.number ? true : undefined}
+        />
+        {errors.number ? (
+          <p className="text-sm text-destructive">{errors.number}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Pre-filled to the next number; edit if you need to.
+          </p>
+        )}
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="invoice-grouping">Group time lines</Label>

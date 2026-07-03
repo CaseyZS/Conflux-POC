@@ -23,7 +23,6 @@ const STATUS_STAMP: Record<
 
 export function InvoiceDocument({ invoice }: { invoice: InvoiceView }) {
   const stamp = STATUS_STAMP[invoice.status];
-  const draft = invoice.status === "draft";
 
   return (
     <article className="invoice-document mx-auto w-full max-w-3xl bg-white p-10 text-zinc-900 shadow-sm ring-1 ring-zinc-200 print:max-w-none print:p-0 print:shadow-none print:ring-0">
@@ -43,13 +42,9 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceView }) {
           <h1 className="text-3xl font-bold uppercase tracking-[0.2em] text-zinc-400">
             Invoice
           </h1>
-          {draft ? (
-            <p className="mt-1 text-sm text-zinc-400">Not yet numbered</p>
-          ) : (
-            <p className="mt-1 text-lg font-semibold tabular-nums">
-              {invoice.number}
-            </p>
-          )}
+          <p className="mt-1 text-lg font-semibold tabular-nums">
+            {invoice.number}
+          </p>
           <span
             className={`mt-2 inline-block rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ring-1 ${stamp.className}`}
           >

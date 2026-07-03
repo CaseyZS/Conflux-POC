@@ -65,6 +65,7 @@ export function formatPaymentTerms(days: number): string {
 // --- Draft settings (everything editable on a draft besides lines) ---
 
 export type DraftSettingsInput = {
+  number: string; // pre-filled (highest + 1) but user-editable; required
   grouping: InvoiceGrouping;
   showDate: boolean;
   showPerson: boolean;
@@ -83,6 +84,7 @@ export type DraftSettingsInput = {
 
 export type DraftSettingsFieldErrors = Partial<
   Record<
+    | "number"
     | "grouping"
     | "issueDate"
     | "dueDate"
@@ -111,6 +113,9 @@ export function parseDraftSettings(
     errors.grouping = "Choose how to group the time lines.";
     return { ok: false, errors };
   }
+
+  const number = asTrimmedString(raw.number);
+  if (number === "") errors.number = "Invoice number is required.";
 
   const issueDate = emptyToNull(asTrimmedString(raw.issueDate));
   if (issueDate !== null && !isIsoDate(issueDate)) {
@@ -157,6 +162,7 @@ export function parseDraftSettings(
   return {
     ok: true,
     data: {
+      number,
       grouping: groupingRaw,
       showDate: raw.showDate != null,
       showPerson: raw.showPerson != null,
