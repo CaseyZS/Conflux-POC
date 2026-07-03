@@ -8,7 +8,7 @@
 // acknowledgment is a form affordance in the entry dialog, not a server rule.
 
 import { isIsoDate } from "@/lib/dates";
-import { parseHoursToSeconds } from "./duration";
+import { parseDurationToSeconds } from "./duration";
 
 // One manual entry tops out at a day: entries are per-calendar-day (D11), so
 // more than 24h on one row is a typo, not a long day.
@@ -41,9 +41,9 @@ export function parseTimeEntryInput(
   if (!isIsoDate(date)) errors.date = "Enter a valid date.";
 
   let durationSeconds = 0;
-  const parsed = parseHoursToSeconds(asTrimmedString(raw.hours));
+  const parsed = parseDurationToSeconds(asTrimmedString(raw.hours));
   if (parsed === null) {
-    errors.hours = "Enter hours as a decimal, like 1.5.";
+    errors.hours = "Enter time like 1:30 or 1.5.";
   } else if (parsed === 0) {
     errors.hours = "Enter more than zero hours.";
   } else if (parsed > MAX_ENTRY_SECONDS) {

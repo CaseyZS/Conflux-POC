@@ -1,13 +1,39 @@
 import { describe, expect, it } from "vitest";
 import {
   elapsedSeconds,
-  formatClock,
+  formatDuration,
   formatHours,
   formatHoursInput,
-  parseHoursToSeconds,
+  parseDurationToSeconds,
 } from "./duration";
 
-describe("formatHours", () => {
+describe("formatDuration", () => {
+  it("formats seconds as H:MM", () => {
+    expect(formatDuration(0)).toBe("0:00");
+    expect(formatDuration(60)).toBe("0:01");
+    expect(formatDuration(3600)).toBe("1:00");
+    expect(formatDuration(5400)).toBe("1:30");
+    expect(formatDuration(27000)).toBe("7:30");
+  });
+
+  it("floors to whole minutes completed (the live clock relies on it)", () => {
+    expect(formatDuration(59)).toBe("0:00");
+    expect(formatDuration(119)).toBe("0:01");
+    expect(formatDuration(3659)).toBe("1:00");
+  });
+
+  it("does not cap the hours (a forgotten timer keeps counting)", () => {
+    expect(formatDuration(90_000)).toBe("25:00");
+    expect(formatDuration(360_000)).toBe("100:00");
+  });
+
+  it("floors a fractional second and clamps negatives", () => {
+    expect(formatDuration(65.9)).toBe("0:01");
+    expect(formatDuration(-1)).toBe("0:00");
+  });
+});
+
+describe("formatHours (the decimal alternative)", () => {
   it("formats whole and fractional hours as decimal hours", () => {
     expect(formatHours(0)).toBe("0h");
     expect(formatHours(3600)).toBe("1h");
@@ -30,36 +56,46 @@ describe("formatHours", () => {
   });
 });
 
-describe("parseHoursToSeconds", () => {
-  it("parses decimal hours to integer seconds", () => {
-    expect(parseHoursToSeconds("1.5")).toBe(5400);
-    expect(parseHoursToSeconds("1.25")).toBe(4500);
-    expect(parseHoursToSeconds("8")).toBe(28800);
-    expect(parseHoursToSeconds("0.75")).toBe(2700);
-    expect(parseHoursToSeconds("0")).toBe(0);
+describe("parseDurationToSeconds", () => {
+  it("parses H:MM to integer seconds", () => {
+    expect(parseDurationToSeconds("1:30")).toBe(5400);
+    expect(parseDurationToSeconds("0:45")).toBe(2700);
+    expect(parseDurationToSeconds("0:00")).toBe(0);
+    expect(parseDurationToSeconds("10:05")).toBe(36300);
+    expect(parseDurationToSeconds(" 2:00 ")).toBe(7200); // whitespace
   });
 
-  it("accepts input-boundary variants", () => {
-    expect(parseHoursToSeconds(" 2 ")).toBe(7200); // whitespace
-    expect(parseHoursToSeconds(".5")).toBe(1800); // no leading zero
-    expect(parseHoursToSeconds("1.5h")).toBe(5400); // display suffix
-    expect(parseHoursToSeconds("0.1")).toBe(360); // one decimal = tenths
+  it("parses decimal hours to integer seconds", () => {
+    expect(parseDurationToSeconds("1.5")).toBe(5400);
+    expect(parseDurationToSeconds("1.25")).toBe(4500);
+    expect(parseDurationToSeconds("8")).toBe(28800);
+    expect(parseDurationToSeconds("0.75")).toBe(2700);
+    expect(parseDurationToSeconds("0")).toBe(0);
+    expect(parseDurationToSeconds(".5")).toBe(1800); // no leading zero
+    expect(parseDurationToSeconds("1.5h")).toBe(5400); // display suffix
+    expect(parseDurationToSeconds("0.1")).toBe(360); // one decimal = tenths
   });
 
   it("rejects what it can't represent exactly", () => {
-    expect(parseHoursToSeconds("")).toBeNull();
-    expect(parseHoursToSeconds("h")).toBeNull();
-    expect(parseHoursToSeconds("abc")).toBeNull();
-    expect(parseHoursToSeconds("-1")).toBeNull();
-    expect(parseHoursToSeconds("1:30")).toBeNull(); // h:mm isn't decimal hours
-    expect(parseHoursToSeconds("1.555")).toBeNull(); // finer than hundredths
-    expect(parseHoursToSeconds("1.")).toBeNull();
-    expect(parseHoursToSeconds("1000")).toBeNull(); // beyond three whole digits
+    expect(parseDurationToSeconds("")).toBeNull();
+    expect(parseDurationToSeconds("h")).toBeNull();
+    expect(parseDurationToSeconds("abc")).toBeNull();
+    expect(parseDurationToSeconds("-1")).toBeNull();
+    expect(parseDurationToSeconds("1:5")).toBeNull(); // minutes are two digits
+    expect(parseDurationToSeconds("1:60")).toBeNull(); // not a minute count
+    expect(parseDurationToSeconds(":30")).toBeNull();
+    expect(parseDurationToSeconds("1:30h")).toBeNull(); // suffix is decimal-only
+    expect(parseDurationToSeconds("1.555")).toBeNull(); // finer than hundredths
+    expect(parseDurationToSeconds("1.")).toBeNull();
+    expect(parseDurationToSeconds("1000")).toBeNull(); // beyond three whole digits
   });
 
-  it("round-trips formatHoursInput", () => {
+  it("round-trips both display forms", () => {
+    for (const seconds of [0, 60, 3600, 5400, 27000, 86400, 90000]) {
+      expect(parseDurationToSeconds(formatDuration(seconds))).toBe(seconds);
+    }
     for (const seconds of [0, 36, 3600, 4500, 5400, 27000, 86400]) {
-      expect(parseHoursToSeconds(formatHoursInput(seconds))).toBe(seconds);
+      expect(parseDurationToSeconds(formatHoursInput(seconds))).toBe(seconds);
     }
   });
 });
@@ -74,24 +110,5 @@ describe("elapsedSeconds", () => {
 
   it("never returns negative on clock skew", () => {
     expect(elapsedSeconds(5000, 0)).toBe(0);
-  });
-});
-
-describe("formatClock", () => {
-  it("formats seconds as h:mm:ss", () => {
-    expect(formatClock(0)).toBe("0:00:00");
-    expect(formatClock(5)).toBe("0:00:05");
-    expect(formatClock(65)).toBe("0:01:05");
-    expect(formatClock(3600)).toBe("1:00:00");
-    expect(formatClock(3663)).toBe("1:01:03");
-  });
-
-  it("does not cap the hours (a forgotten timer keeps counting)", () => {
-    expect(formatClock(90_000)).toBe("25:00:00");
-  });
-
-  it("floors a fractional second and clamps negatives", () => {
-    expect(formatClock(5.9)).toBe("0:00:05");
-    expect(formatClock(-1)).toBe("0:00:00");
   });
 });

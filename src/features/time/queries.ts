@@ -9,7 +9,7 @@
 
 import type { Actor } from "@/lib/authz";
 import { scopedDb } from "@/lib/scope";
-import { formatHours, formatHoursInput } from "./duration";
+import { formatDuration } from "./duration";
 
 export type TimeEntryRow = {
   id: string;
@@ -23,7 +23,7 @@ export type TimeEntryRow = {
   billable: boolean; // the assignment's override over the task default
   durationSeconds: number;
   hoursLabel: string;
-  hoursInput: string; // what the edit form prefills ("1.5", no suffix)
+  hoursInput: string; // what the edit form prefills ("1:30" — parse accepts it back)
   running: boolean;
   startedAtMs: number | null; // epoch ms for the live elapsed tick (timer, seg 3)
 };
@@ -53,8 +53,8 @@ export async function listDayEntries(
     note: entry.note,
     billable: entry.projectTask.billable,
     durationSeconds: entry.durationSeconds,
-    hoursLabel: formatHours(entry.durationSeconds),
-    hoursInput: formatHoursInput(entry.durationSeconds),
+    hoursLabel: formatDuration(entry.durationSeconds),
+    hoursInput: formatDuration(entry.durationSeconds),
     running: entry.startedAt !== null,
     startedAtMs: entry.startedAt?.getTime() ?? null,
   }));

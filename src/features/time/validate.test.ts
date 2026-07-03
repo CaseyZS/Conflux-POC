@@ -51,9 +51,11 @@ describe("parseTimeEntryInput", () => {
 
   it("rejects unparseable, zero, and over-a-day hours", () => {
     const cases: [string, string][] = [
-      ["nope", "Enter hours as a decimal, like 1.5."],
-      ["", "Enter hours as a decimal, like 1.5."],
+      ["nope", "Enter time like 1:30 or 1.5."],
+      ["", "Enter time like 1:30 or 1.5."],
       ["0", "Enter more than zero hours."],
+      ["0:00", "Enter more than zero hours."],
+      ["24:15", "One entry can't be more than 24 hours."],
       ["24.25", "One entry can't be more than 24 hours."],
     ];
     for (const [hours, message] of cases) {
@@ -84,7 +86,7 @@ describe("parseTimeEntryInput", () => {
       ok: false,
       errors: {
         date: "Enter a valid date.",
-        hours: "Enter hours as a decimal, like 1.5.",
+        hours: "Enter time like 1:30 or 1.5.",
       },
     });
   });

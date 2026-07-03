@@ -24,14 +24,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "@/components/submit-button";
-import { formatDayHeading } from "@/lib/dates";
+import { formatDayHeading, todayLocal } from "@/lib/dates";
 import { resumeEntry, startTimer, stopTimer } from "./actions";
-import { elapsedSeconds, formatClock, formatHours } from "./duration";
-import type {
-  ProjectOptions,
-  RunningEntryView,
-  TimeEntryRow,
-} from "./queries";
+import { elapsedSeconds, formatDuration } from "./duration";
+import type { ProjectOptions, RunningEntryView, TimeEntryRow } from "./queries";
 import type { TimeEntryFieldErrors } from "./validate";
 
 // One timer runs at a time (G6), so a running entry's total is a live figure:
@@ -66,31 +62,23 @@ function useLiveSeconds(
   return baseSeconds + elapsedSeconds(startedAtMs, nowMs);
 }
 
-// The running entry's elapsed as a ticking clock (h:mm:ss).
-export function LiveClock({
+// A duration in the H:MM display format — live-ticking when startedAtMs is
+// set (a running entry, or a total that includes one), static otherwise. One
+// component for rows, totals, and the clock: they all show the same format,
+// and formatDuration floors to whole minutes, so the figure showing at the
+// moment of Stop is exactly what gets frozen. (Still ticks at 1 Hz so the
+// minute flips on time; only the displayed string changes once a minute.)
+export function LiveDuration({
   baseSeconds,
   startedAtMs,
   className,
 }: {
   baseSeconds: number;
-  startedAtMs: number;
+  startedAtMs: number | null;
   className?: string;
 }) {
   const seconds = useLiveSeconds(baseSeconds, startedAtMs);
-  return <span className={className}>{formatClock(seconds)}</span>;
-}
-
-// The day's running total in decimal hours — live when a timer for that day is
-// running (startedAtMs set), static otherwise.
-export function LiveHours({
-  baseSeconds,
-  startedAtMs,
-}: {
-  baseSeconds: number;
-  startedAtMs: number | null;
-}) {
-  const seconds = useLiveSeconds(baseSeconds, startedAtMs);
-  return <>{formatHours(seconds)}</>;
+  return <span className={className}>{formatDuration(seconds)}</span>;
 }
 
 // Stop the running timer. router.refresh() (not just the action's
@@ -265,18 +253,26 @@ export function StartTimerDialog({ projects }: { projects: ProjectOptions[] }) {
 // Resume a stopped entry, offering the two paths from D12. "Start fresh today"
 // (encouraged) makes a new entry dated today with the same project/task/note;
 // "Continue this entry" re-opens the same row, keeping its original day and
-// accumulating onto its total. A retired assignment can't be started fresh —
-// the server rejects it — so its only path is Continue, which this surfaces as
-// an error if the fresh start fails.
+// accumulating onto its total. When the entry is already dated today the two
+// paths land on the same day, so the chooser would be a distinction without a
+// difference — Resume just continues the entry directly (2026-07-02). A
+// retired assignment can't be started fresh — the server rejects it — so its
+// only path is Continue, which this surfaces as an error if the fresh start
+// fails. Today is checked at click time (not render) so the server render and
+// hydration can't disagree across midnight or timezones.
 export function ResumeDialog({ entry }: { entry: TimeEntryRow }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
 
-  function handleOpenChange(nextOpen: boolean) {
-    setOpen(nextOpen);
-    if (nextOpen) setError(null);
+  function handleResumeClick() {
+    if (entry.date === todayLocal()) {
+      continueOriginal();
+    } else {
+      setError(null);
+      setOpen(true);
+    }
   }
 
   function startFresh() {
@@ -306,55 +302,63 @@ export function ResumeDialog({ entry }: { entry: TimeEntryRow }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="ghost" size="sm" />}>
-        Resume
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Resume {entry.taskName}</DialogTitle>
-          <DialogDescription>
-            {entry.projectName} · {entry.clientName}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3 text-sm text-muted-foreground">
-          <p>Pick up this task. Any other running timer stops either way.</p>
-          <ul className="grid gap-2">
-            <li>
-              <span className="font-medium text-foreground">
-                Start fresh today
-              </span>{" "}
-              — a new entry dated today. Recommended, so today&apos;s work lands
-              on today.
-            </li>
-            <li>
-              <span className="font-medium text-foreground">
-                Continue this entry
-              </span>{" "}
-              — keeps logging to its original day, {formatDayHeading(entry.date)}
-              , with the time so far kept.
-            </li>
-          </ul>
-          {error && <p className="text-destructive">{error}</p>}
-        </div>
-        <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" />}>
-            Cancel
-          </DialogClose>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={continueOriginal}
-            disabled={pending}
-          >
-            Continue this entry
-          </Button>
-          <Button type="button" onClick={startFresh} disabled={pending}>
-            Start fresh today
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        disabled={pending}
+        onClick={handleResumeClick}
+      >
+        {pending && !open ? "Resuming…" : "Resume"}
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resume {entry.taskName}</DialogTitle>
+            <DialogDescription>
+              {entry.projectName} · {entry.clientName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 text-sm text-muted-foreground">
+            <p>Pick up this task. Any other running timer stops either way.</p>
+            <ul className="grid gap-2">
+              <li>
+                <span className="font-medium text-foreground">
+                  Start fresh today
+                </span>{" "}
+                — a new entry dated today. Recommended, so today&apos;s work
+                lands on today.
+              </li>
+              <li>
+                <span className="font-medium text-foreground">
+                  Continue this entry
+                </span>{" "}
+                — keeps logging to its original day,{" "}
+                {formatDayHeading(entry.date)}, with the time so far kept.
+              </li>
+            </ul>
+            {error && <p className="text-destructive">{error}</p>}
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={continueOriginal}
+              disabled={pending}
+            >
+              Continue this entry
+            </Button>
+            <Button type="button" onClick={startFresh} disabled={pending}>
+              Start fresh today
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -386,7 +390,7 @@ export function RunningTimerWidget({
         </p>
       </Link>
       <div className="mt-2 flex items-center justify-between gap-2">
-        <LiveClock
+        <LiveDuration
           baseSeconds={entry.baseSeconds}
           startedAtMs={entry.startedAtMs}
           className="font-mono text-base tabular-nums"

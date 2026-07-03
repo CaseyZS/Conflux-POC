@@ -4,8 +4,7 @@ import { requireActor } from "@/lib/auth";
 import { addDays, formatDayHeading, isIsoDate, todayLocal } from "@/lib/dates";
 import { TimeEntryDialog } from "@/features/time/entry-dialog";
 import {
-  LiveClock,
-  LiveHours,
+  LiveDuration,
   ResumeDialog,
   StartTimerDialog,
   StopButton,
@@ -89,7 +88,7 @@ export default async function TimePage({
           {entries.length > 0 && (
             <p className="text-sm text-muted-foreground">
               Total{" "}
-              <LiveHours
+              <LiveDuration
                 baseSeconds={baseTotalSeconds}
                 startedAtMs={runningToday?.startedAtMs ?? null}
               />
@@ -151,7 +150,7 @@ export default async function TimePage({
                 </TableCell>
                 <TableCell className="text-right font-medium tabular-nums">
                   {entry.running && entry.startedAtMs !== null ? (
-                    <LiveClock
+                    <LiveDuration
                       baseSeconds={entry.durationSeconds}
                       startedAtMs={entry.startedAtMs}
                       className="font-mono text-emerald-600 dark:text-emerald-400"

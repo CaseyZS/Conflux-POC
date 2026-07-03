@@ -165,8 +165,8 @@ export function TimeEntryDialog({
           <DialogTitle>{entry ? "Edit entry" : "Log time"}</DialogTitle>
           <DialogDescription>
             {entry
-              ? "Hours are decimal (1.5 = an hour and a half). Moving the date moves the entry to that day."
-              : "Pick the project, then one of its assigned tasks. Hours are decimal (1.5 = an hour and a half)."}
+              ? "Time is hours:minutes (1:30) or decimal hours (1.5). Moving the date moves the entry to that day."
+              : "Pick the project, then one of its assigned tasks. Time is hours:minutes (1:30) or decimal hours (1.5)."}
           </DialogDescription>
         </DialogHeader>
         <form action={submit} className="grid gap-4">
@@ -240,9 +240,8 @@ export function TimeEntryDialog({
               <Input
                 id="entry-hours"
                 name="hours"
-                inputMode="decimal"
                 required
-                placeholder="1.5"
+                placeholder="1:30"
                 defaultValue={entry?.hoursInput ?? ""}
                 aria-invalid={errors.hours ? true : undefined}
               />

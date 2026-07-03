@@ -1,11 +1,24 @@
 // Durations mirror the money discipline (G4): integer seconds in the data,
-// decimal hours only at the display/input boundary — and the boundary math is
-// integer math (hundredths of an hour), so no float ever touches a duration.
+// display strings only at the boundary — and the boundary math is integer
+// math, so no float ever touches a duration.
 
-// The shared core: seconds → decimal-hours digits ("1.5", "1.25", "8"),
-// rounded to two decimals, trailing zeros trimmed. This is also the string a
-// form input expects when editing, so parseHoursToSeconds(formatHoursInput(x))
-// round-trips to within rounding.
+// The default duration display: "H:MM" (2026-07-02 request), floored to whole
+// minutes completed, hours uncapped (a forgotten timer can pass 24h), negatives
+// clamped. One format for committed rows, totals, AND the live clock — floor
+// (not round) so the total showing when a timer stops is exactly what gets
+// frozen. The M5 settings page makes the format a preference; formatHours
+// below is the decimal alternative it re-exposes.
+export function formatDuration(durationSeconds: number): string {
+  const minutes = Math.max(0, Math.floor(durationSeconds / 60));
+  const h = Math.trunc(minutes / 60);
+  const m = String(minutes % 60).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+// The decimal-hours form: seconds → digits ("1.5", "1.25", "8"), rounded to
+// two decimals (hundredths of an hour), trailing zeros trimmed. Also a valid
+// input form: parseDurationToSeconds(formatHoursInput(x)) round-trips to
+// within rounding.
 export function formatHoursInput(durationSeconds: number): string {
   const hundredths = Math.round(durationSeconds / 36); // 1h = 100 hundredths
   const whole = Math.trunc(hundredths / 100);
@@ -15,8 +28,8 @@ export function formatHoursInput(durationSeconds: number): string {
   return fraction ? `${whole}.${fraction}` : `${whole}`;
 }
 
-// 5400 → "1.5h", 4500 → "1.25h", 3600 → "1h" — decimal hours per
-// docs/requirements/time-tracking.md.
+// 5400 → "1.5h", 4500 → "1.25h", 3600 → "1h" — the decimal display, kept as
+// the alternative for the M5 time-format setting.
 export function formatHours(durationSeconds: number): string {
   return `${formatHoursInput(durationSeconds)}h`;
 }
@@ -31,30 +44,23 @@ export function elapsedSeconds(startedAtMs: number, nowMs: number): number {
   return Math.max(0, Math.floor((nowMs - startedAtMs) / 1000));
 }
 
-// A live running timer reads as a clock ("0:05:03"), not decimal hours —
-// decimal hours only tick every 36 seconds, which looks frozen. Hours:mm:ss,
-// hours uncapped (a forgotten timer can pass 24h). Committed totals still use
-// formatHours; this is only the live display.
-export function formatClock(totalSeconds: number): string {
-  const seconds = Math.max(0, Math.floor(totalSeconds));
-  const h = Math.trunc(seconds / 3600);
-  const m = Math.trunc((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${h}:${pad(m)}:${pad(s)}`;
-}
+// The inverse for form input, accepting both display forms: "H:MM" ("1:30",
+// two-digit minutes 00–59) or decimal hours ("1.5", ".25", "8", optional "h"
+// suffix) → integer seconds, or null if it's neither. Digit-string math like
+// parseMoneyToMinor — no parseFloat. Decimal input tops out at two decimals:
+// that's the display granularity (hundredths of an hour = 36-second steps),
+// so finer input is a typo, not something to round away silently. Range rules
+// (zero, day caps) belong to validation.
+export function parseDurationToSeconds(input: string): number | null {
+  const trimmed = input.trim();
 
-// The inverse for form input: a decimal-hours string ("1.5", ".25", "8",
-// optionally with an "h" suffix) → integer seconds, or null if it isn't a
-// clean non-negative duration. Digit-string math like parseMoneyToMinor — no
-// parseFloat. Two decimals max: that's the display granularity (hundredths of
-// an hour = 36-second steps), so finer input is a typo, not something to
-// round away silently. Range rules (zero, day caps) belong to validation.
-export function parseHoursToSeconds(input: string): number | null {
-  const match = /^(\d{1,3})?(?:\.(\d{1,2}))?h?$/.exec(input.trim());
-  if (!match) return null;
+  const clock = /^(\d{1,3}):([0-5]\d)$/.exec(trimmed);
+  if (clock) return Number(clock[1]) * 3600 + Number(clock[2]) * 60;
 
-  const [, whole, fraction] = match;
+  const decimal = /^(\d{1,3})?(?:\.(\d{1,2}))?h?$/.exec(trimmed);
+  if (!decimal) return null;
+
+  const [, whole, fraction] = decimal;
   if (whole === undefined && fraction === undefined) return null;
 
   const hundredths = Number((fraction ?? "").padEnd(2, "0") || 0);
