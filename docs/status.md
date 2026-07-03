@@ -5,9 +5,9 @@ The single source of "where we are and what's next," so any session can resume w
 ## Snapshot
 
 - **Date:** 2026-07-02
-- **Phase:** **M3 — Time tracking** in progress on `feature/m3-time-tracking` (plan.md § M3).
+- **Phase:** **M3 — Time tracking** built on `feature/m3-time-tracking` (plan.md § M3) — all segments done and green; awaiting the maintainer's hands-on exit check + merge.
 - **Git:** `develop` holds requirements + plan + M0–M2; working branch `feature/m3-time-tracking` (publishing branches stays with the maintainer).
-- **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`) and build/browse clients → projects → assigned tasks; seed v2 provides a full demo structure.
+- **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`) and build/browse clients → projects → assigned tasks, then track time in the day view (`/time`) and weekly grid (`/time/week`); seed v3 provides the full demo structure plus a working week of time entries that re-seeding slides onto the current week.
 
 ## Done
 
@@ -33,7 +33,9 @@ The single source of "where we are and what's next," so any session can resume w
 - [x] **Seg 2** — manual entry: create/edit/delete on the day view via a project→task picker (active assignments only), decimal-hours duration, note, date; future dates warn-and-acknowledge.
 - [x] **Seg 3** — live timer: start fresh or from an entry, starting one stops the running one (app-layer policy, G6/D5), elapsed ticks live (day view + an always-visible sidebar widget), stop collapses into `durationSeconds`; resume offers new pre-filled entry (encouraged) or continue-the-original (accumulates, keeps its day — D12). Start-timer lives on today only (a timer measures now); running entries can't be edited until stopped.
 - [x] **Seg 4** — weekly grid (`/time/week`, Day|Week tabs on both views): one row per assignment, editable H:MM cells per day committing on blur/Enter (create/update; clearing a cell deletes), row/day/grand totals, an add-row picker for bulk entry. Ambiguous cells (several entries, a running timer, invoiced time) render read-only and defer to the day view; a future day asks for a second Enter (the grid's warn-and-acknowledge). Rolled in the 2026-07-02 display feedback first: **H:MM replaces decimal hours** as the default duration display (input accepts both `1:30` and `1.5`), the live clock drops seconds, and a same-day resume skips the fresh/continue chooser (both paths land on the same day — it just continues). Decimal hours return as a choice when the M5 settings page adds the time-format preference.
-- [ ] **Seg 5** — seed v3 (a working week of entries across projects, including today), exit-criteria sweep, changelog, wrap-up.
+- [x] **Seg 5** — seed v3: eight time entries across five live assignments and both clients, dated by **offset from today** so the idempotent re-seed slides the demo week onto the current week (today included, none in the future, none running — the entries' upsert alone writes the recomputed date on update). Changelog updated (day view, timer, weekly grid, H:MM display, demo week). The live smokes moved their fixtures and emptiness probes to a fixed seed-free week (2020-01-06) since today's week is now always populated; a new check verifies the seeded week renders in the grid. Exit-criteria sweep green: day tracked live and retroactively (timer + manual-entry smokes), both views browsable (day + week smokes), single-timer policy unit-tested and smoke-checked.
+
+**M3 verification (final):** lint clean · 110 unit tests · production build (10 routes) · live smokes 24 (timer) + 20 (week) + 40 (M2 regression).
 
 ## Next up (ordered)
 
