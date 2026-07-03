@@ -5,6 +5,7 @@
 
 import type { Actor } from "@/lib/authz";
 import { scopedDb } from "@/lib/scope";
+import type { DurationFormat } from "@/features/time/duration";
 import { formatBpsPercent } from "@/features/invoices/validate";
 import {
   formatInvoiceNumber,
@@ -19,6 +20,7 @@ export type OrgSettingsView = {
   defaultPaymentTermsDays: string;
   invoiceNumberPrefix: string;
   invoiceFooter: string;
+  timeDisplayFormat: DurationFormat; // how durations show in the timesheet views
   // Read-only: the number the next new draft will pre-fill (highest + 1, D15),
   // shown so the prefix change's effect is visible without an editable counter.
   nextInvoiceNumberPreview: string;
@@ -41,6 +43,10 @@ export async function getOrgSettings(actor: Actor): Promise<OrgSettingsView> {
     defaultPaymentTermsDays: String(org.defaultPaymentTermsDays),
     invoiceNumberPrefix: org.invoiceNumberPrefix,
     invoiceFooter: org.invoiceFooter ?? "",
-    nextInvoiceNumberPreview: formatInvoiceNumber(org.invoiceNumberPrefix, next),
+    timeDisplayFormat: org.timeDisplayFormat === "decimal" ? "decimal" : "hms",
+    nextInvoiceNumberPreview: formatInvoiceNumber(
+      org.invoiceNumberPrefix,
+      next,
+    ),
   };
 }

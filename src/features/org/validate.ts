@@ -5,6 +5,7 @@
 // basis points) done here so the action never touches raw strings.
 
 import { parsePercentToBps } from "@/features/invoices/validate";
+import type { DurationFormat } from "@/features/time/duration";
 
 export type OrgSettingsInput = {
   name: string;
@@ -14,6 +15,7 @@ export type OrgSettingsInput = {
   defaultPaymentTermsDays: number;
   invoiceNumberPrefix: string; // may be empty; must not end in a digit (D15)
   invoiceFooter: string | null;
+  timeDisplayFormat: DurationFormat; // how durations show in the timesheet views
 };
 
 // Error keys are the form field names (not the parsed shape), so the client
@@ -86,6 +88,11 @@ export function parseOrgSettings(
       "The prefix can't end in a digit — the number goes there.";
   }
 
+  // A closed choice from a Select, so it can't be "wrong" — anything that
+  // isn't the decimal option falls back to the H:MM default rather than erroring.
+  const timeDisplayFormat: DurationFormat =
+    asTrimmedString(raw.timeDisplayFormat) === "decimal" ? "decimal" : "hms";
+
   if (Object.keys(errors).length > 0) return { ok: false, errors };
 
   return {
@@ -98,6 +105,7 @@ export function parseOrgSettings(
       defaultPaymentTermsDays: defaultPaymentTermsDays as number,
       invoiceNumberPrefix,
       invoiceFooter: emptyToNull(asTrimmedString(raw.invoiceFooter)),
+      timeDisplayFormat,
     },
   };
 }

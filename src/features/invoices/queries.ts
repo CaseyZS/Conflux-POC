@@ -8,7 +8,7 @@ import type { Actor } from "@/lib/authz";
 import { addDays, todayLocal } from "@/lib/dates";
 import { formatMoney, formatMoneyInput } from "@/lib/money";
 import { scopedDb } from "@/lib/scope";
-import { formatDuration } from "@/features/time/duration";
+import { formatDurationAs } from "@/features/time/duration";
 import { computeDraft } from "./draft";
 import { formatQuantityMilli } from "./derive";
 import {
@@ -146,7 +146,7 @@ export async function listNewInvoiceCandidates(
               archived,
               detail:
                 seconds > 0
-                  ? `${formatDuration(seconds)} unbilled`
+                  ? `${formatDurationAs(seconds, actor.timeFormat)} unbilled`
                   : "no unbilled time yet",
             },
           ];

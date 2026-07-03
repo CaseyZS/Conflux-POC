@@ -3,11 +3,23 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "@/components/submit-button";
 import { updateOrgSettings } from "./actions";
 import type { OrgSettingsView } from "./queries";
 import type { OrgSettingsFieldErrors } from "./validate";
+
+const TIME_FORMAT_ITEMS = [
+  { value: "hms", label: "Hours:minutes (2:30)" },
+  { value: "decimal", label: "Decimal hours (2.5h)" },
+];
 
 // The org's identity + invoice defaults in one form. These pre-fill new
 // clients/invoices and are snapshotted onto an invoice only at finalize, so
@@ -24,6 +36,11 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
   const [initial] = useState(settings);
   const [errors, setErrors] = useState<OrgSettingsFieldErrors>({});
   const [saved, setSaved] = useState(false);
+  // A closed choice, so it's controlled state (submitted via the Select's
+  // hidden input) rather than an uncontrolled defaultValue like the text fields.
+  const [timeFormat, setTimeFormat] = useState<string | null>(
+    initial.timeDisplayFormat,
+  );
 
   async function submit(formData: FormData) {
     const result = await updateOrgSettings(formData);
@@ -37,7 +54,11 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
   }
 
   return (
-    <form action={submit} onChange={() => setSaved(false)} className="grid gap-6">
+    <form
+      action={submit}
+      onChange={() => setSaved(false)}
+      className="grid gap-6"
+    >
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="org-name">Business name</Label>
@@ -95,7 +116,9 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
             defaultValue={initial.defaultTaxRateInput}
             aria-invalid={errors.defaultTaxRate ? true : undefined}
           />
-          <p className="text-xs text-muted-foreground">Empty = no default tax.</p>
+          <p className="text-xs text-muted-foreground">
+            Empty = no default tax.
+          </p>
           {errors.defaultTaxRate && (
             <p className="text-sm text-destructive">{errors.defaultTaxRate}</p>
           )}
@@ -110,9 +133,7 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
             defaultValue={initial.defaultPaymentTermsDays}
             aria-invalid={errors.defaultPaymentTermsDays ? true : undefined}
           />
-          <p className="text-xs text-muted-foreground">
-            0 = due on receipt.
-          </p>
+          <p className="text-xs text-muted-foreground">0 = due on receipt.</p>
           {errors.defaultPaymentTermsDays && (
             <p className="text-sm text-destructive">
               {errors.defaultPaymentTermsDays}
@@ -156,6 +177,34 @@ export function SettingsForm({ settings }: { settings: OrgSettingsView }) {
             placeholder="Default notes / terms at the bottom of an invoice"
           />
         </div>
+      </div>
+
+      <div className="grid gap-2 sm:max-w-xs">
+        <Label htmlFor="org-time-format">Time display</Label>
+        <Select
+          name="timeDisplayFormat"
+          items={TIME_FORMAT_ITEMS}
+          value={timeFormat}
+          onValueChange={(v) => {
+            setTimeFormat(v);
+            setSaved(false);
+          }}
+        >
+          <SelectTrigger id="org-time-format" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TIME_FORMAT_ITEMS.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          How durations show in the timesheet — the day view, the weekly grid,
+          and the running timer.
+        </p>
       </div>
 
       <div className="flex items-center gap-3">

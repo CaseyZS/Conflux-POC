@@ -27,12 +27,17 @@ describe("parseOrgSettings", () => {
         defaultPaymentTermsDays: 30,
         invoiceNumberPrefix: "INV-",
         invoiceFooter: "Thanks!",
+        timeDisplayFormat: "hms", // absent in the payload ⇒ the default
       });
     }
   });
 
   it("treats blank optional text as null and blank tax as no default", () => {
-    const result = parse({ fromDetails: "  ", invoiceFooter: "", defaultTaxRate: "" });
+    const result = parse({
+      fromDetails: "  ",
+      invoiceFooter: "",
+      defaultTaxRate: "",
+    });
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.data.fromDetails).toBeNull();
@@ -67,7 +72,20 @@ describe("parseOrgSettings", () => {
     for (const defaultPaymentTermsDays of ["", "abc", "1000", "-5"]) {
       const result = parse({ defaultPaymentTermsDays });
       expect(result.ok).toBe(false);
-      if (!result.ok) expect(result.errors.defaultPaymentTermsDays).toBeDefined();
+      if (!result.ok)
+        expect(result.errors.defaultPaymentTermsDays).toBeDefined();
+    }
+  });
+
+  it("takes the decimal time format and falls back to hms for anything else", () => {
+    const decimal = parse({ timeDisplayFormat: "decimal" });
+    expect(decimal.ok).toBe(true);
+    if (decimal.ok) expect(decimal.data.timeDisplayFormat).toBe("decimal");
+
+    for (const timeDisplayFormat of ["hms", "", "bogus", undefined]) {
+      const result = parse({ timeDisplayFormat });
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.data.timeDisplayFormat).toBe("hms");
     }
   });
 

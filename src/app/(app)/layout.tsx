@@ -25,7 +25,7 @@ export default async function AppLayout({
           <p className="truncate text-xs text-muted-foreground">{org?.name}</p>
         </div>
         <NavLinks canManageSettings={can(actor, "company.settings")} />
-        <RunningTimerWidget entry={runningEntry} />
+        <RunningTimerWidget entry={runningEntry} format={actor.timeFormat} />
         <div className="mt-auto border-t px-4 py-4">
           <p className="truncate text-sm font-medium">{actor.displayName}</p>
           <p className="truncate text-xs text-muted-foreground">

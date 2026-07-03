@@ -21,6 +21,7 @@ function actorWith(
     displayName: "A",
     active: true,
     capabilities: new Set(capabilities),
+    timeFormat: "hms",
     ...overrides,
   };
 }

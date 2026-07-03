@@ -22,6 +22,7 @@ model Organization {
   invoiceFooter           String?
   invoiceNumberPrefix     String   @default("INV-")
   invoiceNextNumber       Int      @default(1) // vestigial: numbering is now highest-existing + 1, pre-filled + editable on the draft (D15)
+  timeDisplayFormat       String   @default("hms") // "hms" | "decimal" — how durations show in the timesheet views (Settings; TS union in code)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 

@@ -92,6 +92,7 @@ export default async function TimeWeekPage({
         rows={rows}
         projects={projectOptions}
         today={today}
+        format={actor.timeFormat}
       />
     </div>
   );

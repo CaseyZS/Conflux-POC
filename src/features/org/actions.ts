@@ -7,8 +7,7 @@ import { scopedDb } from "@/lib/scope";
 import { parseOrgSettings, type OrgSettingsFieldErrors } from "./validate";
 
 export type SaveOrgSettingsResult =
-  | { status: "success" }
-  | { status: "error"; errors: OrgSettingsFieldErrors };
+  { status: "success" } | { status: "error"; errors: OrgSettingsFieldErrors };
 
 // Same guard chain as every other write: requireActor authenticates (G3),
 // requireCapability authorizes (G2/G10), scopedDb pins the org (G1) — here the
@@ -28,6 +27,7 @@ export async function updateOrgSettings(
     defaultPaymentTermsDays: formData.get("defaultPaymentTermsDays"),
     invoiceNumberPrefix: formData.get("invoiceNumberPrefix"),
     invoiceFooter: formData.get("invoiceFooter"),
+    timeDisplayFormat: formData.get("timeDisplayFormat"),
   });
   if (!parsed.ok) return { status: "error", errors: parsed.errors };
 

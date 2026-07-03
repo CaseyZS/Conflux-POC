@@ -29,6 +29,10 @@ export type Actor = {
   displayName: string;
   active: boolean;
   capabilities: ReadonlySet<Capability>;
+  // The org's time-display preference, resolved with the actor so every read
+  // layer / view already has it (kept as a bare union to match
+  // features/time/duration's DurationFormat without a lib→feature import).
+  timeFormat: "hms" | "decimal";
 };
 
 const CAPABILITY_SET: ReadonlySet<string> = new Set(CAPABILITIES);
