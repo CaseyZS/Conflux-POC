@@ -6,11 +6,8 @@ import { requireActor } from "@/lib/auth";
 import { requireCapability } from "@/lib/authz";
 import { lineAmountMinor } from "@/lib/money";
 import { scopedDb, type ScopedDb } from "@/lib/scope";
-import {
-  finalizeInvoice,
-  formatInvoiceNumber,
-  nextInvoiceNumberValue,
-} from "./finalize";
+import { finalizeInvoice } from "./finalize";
+import { formatInvoiceNumber, nextInvoiceNumberValue } from "./numbering";
 import {
   parseDraftSettings,
   parseManualLine,
@@ -148,6 +145,8 @@ export async function updateDraftSettings(
   const actor = requireCapability(await requireActor(), "invoice.manage");
   const db = scopedDb(actor.organizationId);
   const invoice = await findDraft(db, invoiceId);
+  const org = await db.organization.findFirst();
+  if (!org) throw new Error("Organization not found.");
 
   const parsed = parseDraftSettings(
     {
@@ -168,6 +167,7 @@ export async function updateDraftSettings(
       footer: formData.get("footer"),
     },
     invoice.client.currency,
+    org.invoiceNumberPrefix,
   );
   if (!parsed.ok) return { status: "error", errors: parsed.errors };
 

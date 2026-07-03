@@ -5,6 +5,7 @@
 
 import { isIsoDate } from "@/lib/dates";
 import { parseMoneyToMinor } from "@/lib/money";
+import { formatInvoiceNumber } from "./numbering";
 
 export const INVOICE_STATUSES = ["draft", "sent", "paid", "void"] as const;
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
@@ -107,6 +108,7 @@ export type DraftSettingsResult =
 export function parseDraftSettings(
   raw: Record<string, unknown>,
   currency: string,
+  numberPrefix: string,
 ): DraftSettingsResult {
   const errors: DraftSettingsFieldErrors = {};
 
@@ -116,8 +118,13 @@ export function parseDraftSettings(
     return { ok: false, errors };
   }
 
-  const number = asTrimmedString(raw.number);
-  if (number === "") errors.number = "Invoice number is required.";
+  // Only the numeric tail is user-editable; the prefix is the org's, applied
+  // here. Digits only keeps the sequence unambiguous (no letters/symbols).
+  const numberSeq = asTrimmedString(raw.number);
+  const numberSeqValue = /^\d{1,9}$/.test(numberSeq) ? Number(numberSeq) : NaN;
+  if (Number.isNaN(numberSeqValue) || numberSeqValue < 1) {
+    errors.number = "The invoice number is digits only (e.g. 42).";
+  }
 
   const issueDate = emptyToNull(asTrimmedString(raw.issueDate));
   if (issueDate !== null && !isIsoDate(issueDate)) {
@@ -164,7 +171,7 @@ export function parseDraftSettings(
   return {
     ok: true,
     data: {
-      number,
+      number: formatInvoiceNumber(numberPrefix, numberSeqValue),
       grouping: groupingRaw,
       showDate: raw.showDate != null,
       showPerson: raw.showPerson != null,

@@ -14,6 +14,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "@/components/submit-button";
 import { updateDraftSettings } from "./actions";
+import { splitInvoiceNumber } from "./numbering";
 import type { InvoiceView } from "./queries";
 import type { DraftSettingsFieldErrors, InvoiceGrouping } from "./validate";
 
@@ -43,6 +44,11 @@ const TOGGLES: { name: string; label: string }[] = [
 // reflects what's set here. Checkbox/select values submit via hidden inputs
 // (state is the source of truth), the same pattern as the new-invoice form.
 export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
+  // The stored number is the full "INV-0002"; only the digits are editable, so
+  // split off the fixed prefix to show it as static text beside the input.
+  const { prefix: numberPrefix, seq: numberSeq } = splitInvoiceNumber(
+    invoice.number ?? "",
+  );
   const [errors, setErrors] = useState<DraftSettingsFieldErrors>({});
   const [saved, setSaved] = useState(false);
   const [grouping, setGrouping] = useState<string | null>(invoice.grouping);
@@ -81,17 +87,24 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
     <form action={submit} className="grid gap-4">
       <div className="grid gap-2 sm:max-w-xs">
         <Label htmlFor="invoice-number">Invoice number</Label>
-        <Input
-          id="invoice-number"
-          name="number"
-          defaultValue={invoice.number ?? ""}
-          aria-invalid={errors.number ? true : undefined}
-        />
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-medium tabular-nums text-muted-foreground">
+            {numberPrefix}
+          </span>
+          <Input
+            id="invoice-number"
+            name="number"
+            inputMode="numeric"
+            defaultValue={numberSeq}
+            aria-invalid={errors.number ? true : undefined}
+            className="w-28"
+          />
+        </div>
         {errors.number ? (
           <p className="text-sm text-destructive">{errors.number}</p>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Pre-filled to the next number; edit if you need to.
+            Only the number is editable; the prefix is fixed.
           </p>
         )}
       </div>

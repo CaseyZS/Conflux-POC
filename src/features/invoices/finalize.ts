@@ -9,41 +9,10 @@
 import { addDays, todayLocal } from "@/lib/dates";
 import type { ScopedDb } from "@/lib/scope";
 import { computeDraft } from "./draft";
+import { formatInvoiceNumber, nextInvoiceNumberValue } from "./numbering";
 
 export type FinalizeResult =
   { ok: true; number: string } | { ok: false; message: string };
-
-// "INV-" + 1 → "INV-0001": four digits keeps numbers sortable-looking in a
-// list without pretending to be a spec — the padding is display-at-assign,
-// stored on the snapshot like every other finalized value.
-export function formatInvoiceNumber(prefix: string, value: number): string {
-  return `${prefix}${String(value).padStart(4, "0")}`;
-}
-
-// The numeric tail of an invoice number, for sequencing: "INV-0007" → 7,
-// "2026-014" → 14. A number with no trailing digits (a fully custom label)
-// contributes nothing to the sequence.
-export function invoiceNumberValue(number: string): number | null {
-  const match = /(\d+)\s*$/.exec(number);
-  return match ? Number(match[1]) : null;
-}
-
-// The next number to propose on a new draft: one past the highest numeric tail
-// among all existing invoice numbers (drafts and finalized alike), or 1 for the
-// first. This is a default the user can override on the draft — deliberately
-// NOT a strictly gapless counter, so editing or deleting drafts can leave gaps.
-// Duplicates are still prevented by the @@unique([organizationId, number]) index.
-export function nextInvoiceNumberValue(
-  existingNumbers: readonly (string | null)[],
-): number {
-  let max = 0;
-  for (const number of existingNumbers) {
-    if (!number) continue;
-    const value = invoiceNumberValue(number);
-    if (value !== null && value > max) max = value;
-  }
-  return max + 1;
-}
 
 export async function finalizeInvoice(
   db: ScopedDb,

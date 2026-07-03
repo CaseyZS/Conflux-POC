@@ -3,11 +3,9 @@ import {
   formatInvoiceNumber,
   invoiceNumberValue,
   nextInvoiceNumberValue,
-} from "./finalize";
+  splitInvoiceNumber,
+} from "./numbering";
 
-// The transaction itself is exercised live (the seed finalizes through it,
-// and the smoke asserts the links); what's unit-testable is the number
-// formatting and the "highest + 1" pre-fill sequencing.
 describe("formatInvoiceNumber", () => {
   it("pads to four digits under the org prefix", () => {
     expect(formatInvoiceNumber("INV-", 1)).toBe("INV-0001");
@@ -44,5 +42,22 @@ describe("nextInvoiceNumberValue", () => {
     expect(nextInvoiceNumberValue([])).toBe(1);
     expect(nextInvoiceNumberValue([null, "CUSTOM"])).toBe(1);
     expect(nextInvoiceNumberValue([null, "INV-0003", "CUSTOM"])).toBe(4);
+  });
+});
+
+describe("splitInvoiceNumber", () => {
+  it("separates the fixed prefix from the editable digits", () => {
+    expect(splitInvoiceNumber("INV-0002")).toEqual({
+      prefix: "INV-",
+      seq: "0002",
+    });
+    expect(splitInvoiceNumber("ACME/0999")).toEqual({
+      prefix: "ACME/",
+      seq: "0999",
+    });
+  });
+
+  it("yields an empty seq when there are no trailing digits", () => {
+    expect(splitInvoiceNumber("DRAFT")).toEqual({ prefix: "DRAFT", seq: "" });
   });
 });

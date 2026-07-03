@@ -33,5 +33,5 @@ All notable user-facing changes to Conflux. Format follows [Keep a Changelog](ht
 - Invoices: payment terms display in standard net-terms language ("NET30", or "Due on receipt" for zero-day terms) instead of "30 days".
 - Invoices: when a line item shows its date, the date now leads the line in YYYY/MM/DD format.
 - Invoices: a "Preview" button on drafts opens the polished invoice document exactly as it will look — stamped DRAFT — so you can review it before finalizing.
-- Invoices: the invoice number is now pre-filled on a new draft (one past the highest number on any existing invoice) and editable in the draft's settings, then frozen at finalize; numbers stay unique per organization.
+- Invoices: the invoice number is now pre-filled on a new draft (one past the highest number on any existing invoice) and editable in the draft's settings — only the numeric part, with the prefix fixed — then frozen at finalize; numbers stay unique per organization.
 - Invoices: a finalized invoice (sent or paid) that's wrong can be **Voided** — it stays on record marked Void with its number intact, and the time entries and fixed fees it billed are released back to the unbilled pool so you can issue a corrected invoice.
