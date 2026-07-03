@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 // as their milestones land (Projects/Tasks in M2, Time in M3, Invoices in M4).
 const LINKS = [
   { href: "/", label: "Dashboard" },
+  { href: "/time", label: "Time" },
   { href: "/clients", label: "Clients" },
   { href: "/tasks", label: "Tasks" },
 ];

@@ -11,7 +11,7 @@ Updated as milestones land; this is the table that persists build state across s
 | M0 | Scaffolded app boots: Next.js + TS + Prisma/SQLite + Tailwind/shadcn + Auth.js, schema migrated, seed runs | ✅ Done (2026-07-02) |
 | M1 | First vertical slice: seeded login → create a client → list clients (proves G1/G3/G10 end-to-end) | ✅ Done (2026-07-02) |
 | M2 | Projects & tasks: project CRUD with billing type/method, global task list, project↔task assignment | ✅ Done (2026-07-02) |
-| M3 | Time tracking: live timer + manual entry, day + weekly views, single-timer policy | ⬜ Not started |
+| M3 | Time tracking: live timer + manual entry, day + weekly views, single-timer policy | ✅ Built (2026-07-02) — pending review + merge |
 | M4 | Invoicing lifecycle: draft from time / fixed fee / manual lines, grouping, finalize→snapshot, mark-as-paid | ⬜ Not started |
 | M5 | Invoice output & demo polish: on-screen + PDF from one component (G9), branding, full demo seed + walkthrough | ⬜ Not started |
 
@@ -476,7 +476,7 @@ Tracked work becomes money — draft → finalize → paid, with the anti-double
 The stakeholder-facing finish — this milestone is the demo.
 
 - **Invoice document:** one styled component renders both the on-screen view and the PDF (G9) — Playwright's headless Chromium prints the same route to PDF for download. Print CSS tuned so the PDF looks like a real invoice, not a webpage.
-- **Org settings page:** business name, "from" block, logo upload (→ `Asset`), currency/tax/terms defaults, invoice prefix + next number, footer — the branding that finalize snapshots.
+- **Org settings page:** business name, "from" block, logo upload (→ `Asset`), currency/tax/terms defaults, default time display format (H:MM vs decimal hours — requested 2026-07-02; the seam is `features/time/duration.ts`), invoice prefix + next number, footer — the branding that finalize snapshots.
 - **Polish pass over the demo path only:** consistent theming, empty states, loading/error states, a simple landing/dashboard after login. Polish over robustness, per the requirements' guiding principle.
 - **Demo assets:** the full seed (everything above, plus enough variety that every screen shows real data) and `docs/demo.md` — the scripted walkthrough: login → timesheet → live timer → client/project tour → draft invoice → finalize → PDF.
 - **Exit:** the complete stakeholder demo runs from seed in one sitting, ending with a professional PDF in hand.
