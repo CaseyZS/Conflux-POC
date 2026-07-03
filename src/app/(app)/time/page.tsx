@@ -99,6 +99,7 @@ export default async function TimePage({
               <LiveDuration
                 baseSeconds={baseTotalSeconds}
                 startedAtMs={runningToday?.startedAtMs ?? null}
+                format={actor.timeFormat}
               />
             </p>
           )}
@@ -165,6 +166,7 @@ export default async function TimePage({
                     <LiveDuration
                       baseSeconds={entry.durationSeconds}
                       startedAtMs={entry.startedAtMs}
+                      format={actor.timeFormat}
                       className="font-mono text-emerald-600 dark:text-emerald-400"
                     />
                   ) : (

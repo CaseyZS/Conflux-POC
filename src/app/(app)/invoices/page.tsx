@@ -24,7 +24,9 @@ export default async function InvoicesPage() {
     <div className="mx-auto max-w-4xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Invoices</h1>
-        <Button render={<Link href="/invoices/new" />}>New invoice</Button>
+        <Button nativeButton={false} render={<Link href="/invoices/new" />}>
+          New invoice
+        </Button>
       </div>
 
       {invoices.length === 0 ? (

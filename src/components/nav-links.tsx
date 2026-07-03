@@ -16,12 +16,22 @@ const LINKS = [
   { href: "/invoices", label: "Invoices" },
 ];
 
-export function NavLinks() {
+// Settings is capability-gated (the only privileged link so far): the layout
+// passes whether the actor holds company.settings, so a Member/Manager never
+// sees a link that would 403. The page itself still guards authoritatively.
+export function NavLinks({
+  canManageSettings = false,
+}: {
+  canManageSettings?: boolean;
+}) {
   const pathname = usePathname();
+  const links = canManageSettings
+    ? [...LINKS, { href: "/settings", label: "Settings" }]
+    : LINKS;
 
   return (
     <nav className="grid gap-1 px-3">
-      {LINKS.map(({ href, label }) => {
+      {links.map(({ href, label }) => {
         const active =
           href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (

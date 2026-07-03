@@ -11,6 +11,7 @@ const STATUS_STYLES: Record<InvoiceStatus, { label: string; classes: string }> =
     },
     sent: { label: "Sent", classes: "bg-sky-100 text-sky-900" },
     paid: { label: "Paid", classes: "bg-emerald-100 text-emerald-900" },
+    void: { label: "Void", classes: "bg-rose-100 text-rose-900 line-through" },
   };
 
 export function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {

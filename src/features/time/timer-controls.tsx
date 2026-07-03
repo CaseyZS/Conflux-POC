@@ -26,7 +26,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDayHeading, todayLocal } from "@/lib/dates";
 import { resumeEntry, startTimer, stopTimer } from "./actions";
-import { elapsedSeconds, formatDuration } from "./duration";
+import {
+  elapsedSeconds,
+  formatDurationAs,
+  type DurationFormat,
+} from "./duration";
 import type { ProjectOptions, RunningEntryView, TimeEntryRow } from "./queries";
 import type { TimeEntryFieldErrors } from "./validate";
 
@@ -62,23 +66,26 @@ function useLiveSeconds(
   return baseSeconds + elapsedSeconds(startedAtMs, nowMs);
 }
 
-// A duration in the H:MM display format — live-ticking when startedAtMs is
-// set (a running entry, or a total that includes one), static otherwise. One
-// component for rows, totals, and the clock: they all show the same format,
-// and formatDuration floors to whole minutes, so the figure showing at the
-// moment of Stop is exactly what gets frozen. (Still ticks at 1 Hz so the
-// minute flips on time; only the displayed string changes once a minute.)
+// A duration in the org's chosen display format — live-ticking when
+// startedAtMs is set (a running entry, or a total that includes one), static
+// otherwise. One component for rows, totals, and the clock: they all show the
+// same format, and formatDuration floors to whole minutes, so the figure
+// showing at the moment of Stop is exactly what gets frozen. (Still ticks at
+// 1 Hz so the minute flips on time; only the displayed string changes once a
+// minute — or, in decimal, once every 36 seconds.)
 export function LiveDuration({
   baseSeconds,
   startedAtMs,
+  format,
   className,
 }: {
   baseSeconds: number;
   startedAtMs: number | null;
+  format: DurationFormat;
   className?: string;
 }) {
   const seconds = useLiveSeconds(baseSeconds, startedAtMs);
-  return <span className={className}>{formatDuration(seconds)}</span>;
+  return <span className={className}>{formatDurationAs(seconds, format)}</span>;
 }
 
 // Stop the running timer. router.refresh() (not just the action's
@@ -368,8 +375,10 @@ export function ResumeDialog({ entry }: { entry: TimeEntryRow }) {
 // the entry counts against (which may be an earlier day, for a continued one).
 export function RunningTimerWidget({
   entry,
+  format,
 }: {
   entry: RunningEntryView | null;
+  format: DurationFormat;
 }) {
   if (!entry) return null;
   return (
@@ -393,6 +402,7 @@ export function RunningTimerWidget({
         <LiveDuration
           baseSeconds={entry.baseSeconds}
           startedAtMs={entry.startedAtMs}
+          format={format}
           className="font-mono text-base tabular-nums"
         />
         <StopButton entryId={entry.id} />

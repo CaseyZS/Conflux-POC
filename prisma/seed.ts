@@ -9,6 +9,9 @@
 // project (billed through the real finalizeInvoice, so seeded history took
 // the same path the button does), and an open draft over the demo week's
 // unbilled pool.
+// Seed v5 (M5): a finalized-but-unpaid invoice (Globex's ERP Migration fixed
+// fee), so the invoices list shows all three lifecycle states (Paid / Sent /
+// Draft) and the dashboard's "awaiting payment" tile has real data.
 // Idempotent: everything is upserted on stable keys, so re-running is always
 // safe — each milestone extends this script (seed v1, v2, ...) rather than
 // replacing it. Run via `npm run db:seed` (or `npx prisma db seed`).
@@ -59,7 +62,8 @@ const SEED_CLIENTS = [
     name: "Acme Corporation",
     contactPerson: "Jane Porter",
     email: "ap@acme.test",
-    billingAddress: "Acme Corporation\n42 Industrial Way\nSpringfield, IL 62704",
+    billingAddress:
+      "Acme Corporation\n42 Industrial Way\nSpringfield, IL 62704",
     currency: "USD",
   },
   {
@@ -369,9 +373,10 @@ const SEED_HISTORY_ENTRIES: typeof SEED_TIME_ENTRIES = [
   },
 ];
 
-// Seed v4: the two invoices — fixed ids like everything else.
+// Seed v4/v5: the invoices — fixed ids like everything else.
 const INVOICE_PAID_ID = "00000000-0000-4000-8000-000000000701";
 const INVOICE_DRAFT_ID = "00000000-0000-4000-8000-000000000702";
+const INVOICE_SENT_ID = "00000000-0000-4000-8000-000000000703";
 const MANUAL_LINE_ID = "00000000-0000-4000-8000-000000000801";
 
 async function main() {
@@ -541,7 +546,9 @@ async function main() {
       id: INVOICE_PAID_ID,
       organizationId: org.id,
       clientId: SEED_CLIENTS[0].id, // Acme
+      number: "INV-0001",
       paymentTermsDays: org.defaultPaymentTermsDays,
+      subject: "Brand Refresh — identity & guidelines",
     },
   });
   await db.invoiceProject.upsert({
@@ -571,6 +578,49 @@ async function main() {
     });
   }
 
+  // Seed v5 — a finalized, still-unpaid invoice: Globex's ERP Migration fixed
+  // fee (a EUR invoice, so a second currency shows on a finalized document),
+  // billed through the real finalizeInvoice and left "sent" (Finalize IS the
+  // draft→sent transition). Issued ~10 days ago so it reads as genuinely
+  // awaiting payment. Idempotent like the paid one: once it's out of draft the
+  // block skips, and the fixed-fee link (project.fixedFeeInvoiceId) stays put.
+  const sentInvoice = await db.invoice.upsert({
+    where: { id: INVOICE_SENT_ID },
+    update: {},
+    create: {
+      id: INVOICE_SENT_ID,
+      organizationId: org.id,
+      clientId: SEED_CLIENTS[1].id, // Globex (EUR)
+      number: "INV-0003",
+      paymentTermsDays: org.defaultPaymentTermsDays,
+      issueDate: addDays(today, -10),
+      subject: "ERP Migration — fixed-fee engagement",
+    },
+  });
+  await db.invoiceProject.upsert({
+    where: {
+      invoiceId_projectId: {
+        invoiceId: INVOICE_SENT_ID,
+        projectId: SEED_PROJECTS[2].id, // ERP Migration (fixed fee)
+      },
+    },
+    update: {},
+    create: {
+      invoiceId: INVOICE_SENT_ID,
+      projectId: SEED_PROJECTS[2].id,
+      organizationId: org.id,
+      includeTime: false,
+      includeFixedFee: true,
+    },
+  });
+  if (sentInvoice.status === "draft") {
+    const finalized = await finalizeInvoice(scopedDb(org.id), INVOICE_SENT_ID);
+    if (!finalized.ok) {
+      throw new Error(`Seed finalize (sent) failed: ${finalized.message}`);
+    }
+    // Left as "sent" — no mark-paid, so it sits awaiting payment.
+  }
+
   // The open draft: the demo week's unbilled Acme pool plus a manual line,
   // with a tax and PO so the money block isn't empty. All its numbers stay
   // derived live — finalizing it is the demo's grand finale, not the seed's.
@@ -581,9 +631,12 @@ async function main() {
       id: INVOICE_DRAFT_ID,
       organizationId: org.id,
       clientId: SEED_CLIENTS[0].id, // Acme
+      number: "INV-0002", // pre-filled next number; editable while a draft
       paymentTermsDays: org.defaultPaymentTermsDays,
       taxRateBps: 825, // 8.25%
       poNumber: "PO-2026-117",
+      subject: "Q2 development — Website & Mobile App",
+      showDate: true, // showcase the date-first line format
     },
   });
   for (const projectId of [SEED_PROJECTS[0].id, SEED_PROJECTS[1].id]) {
@@ -632,7 +685,7 @@ async function main() {
     invoices: await db.invoice.count(),
     invoiceLines: await db.invoiceLine.count(),
   };
-  console.log(`Seed v4 complete for "${org.name}" (${ADMIN_EMAIL}):`, counts);
+  console.log(`Seed v5 complete for "${org.name}" (${ADMIN_EMAIL}):`, counts);
 }
 
 main()

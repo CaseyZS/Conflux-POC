@@ -8,11 +8,12 @@ import type { Actor } from "@/lib/authz";
 import { addDays, todayLocal } from "@/lib/dates";
 import { formatMoney, formatMoneyInput } from "@/lib/money";
 import { scopedDb } from "@/lib/scope";
-import { formatDuration } from "@/features/time/duration";
+import { formatDurationAs } from "@/features/time/duration";
 import { computeDraft } from "./draft";
 import { formatQuantityMilli } from "./derive";
 import {
   formatBpsPercent,
+  formatPaymentTerms,
   type InvoiceGrouping,
   type InvoiceStatus,
 } from "./validate";
@@ -145,13 +146,16 @@ export async function listNewInvoiceCandidates(
               archived,
               detail:
                 seconds > 0
-                  ? `${formatDuration(seconds)} unbilled`
+                  ? `${formatDurationAs(seconds, actor.timeFormat)} unbilled`
                   : "no unbilled time yet",
             },
           ];
         }
         // Fixed fee: offered until some invoice bills it (anti-double-bill).
-        if (project.fixedFeeInvoiceId !== null || project.fixedFeeMinor === null)
+        if (
+          project.fixedFeeInvoiceId !== null ||
+          project.fixedFeeMinor === null
+        )
           return [];
         return [
           {
@@ -201,6 +205,8 @@ export type InvoiceView = {
   effectiveIssueDate: string;
   effectiveDueDate: string;
   paymentTermsDays: number;
+  paymentTermsLabel: string; // "NET30" / "Due on receipt"
+  subject: string | null;
   poNumber: string | null;
   discountKind: "none" | "percent" | "flat";
   discountValueInput: string;
@@ -260,8 +266,7 @@ export async function getInvoiceView(
         key: `derived-${index}`,
         id: null,
         source: ("projectId" in line ? "fixed_fee" : "time") as
-          | "time"
-          | "fixed_fee",
+          "time" | "fixed_fee",
         description: line.description,
         quantityLabel: formatQuantityMilli(line.quantityMilli),
         rateLabel: money(line.unitRateMinor),
@@ -284,12 +289,7 @@ export async function getInvoiceView(
       projectId: line.projectId,
     }));
     lines = [...derived, ...manual];
-    ({
-      subtotalMinor,
-      discountMinor,
-      taxMinor,
-      totalMinor,
-    } = computed.totals);
+    ({ subtotalMinor, discountMinor, taxMinor, totalMinor } = computed.totals);
   } else {
     lines = [...invoice.lines]
       .sort((a, b) => a.position - b.position)
@@ -380,6 +380,8 @@ export async function getInvoiceView(
     effectiveIssueDate,
     effectiveDueDate,
     paymentTermsDays: invoice.paymentTermsDays,
+    paymentTermsLabel: formatPaymentTerms(invoice.paymentTermsDays),
+    subject: invoice.subject,
     poNumber: invoice.poNumber,
     discountKind,
     discountValueInput:

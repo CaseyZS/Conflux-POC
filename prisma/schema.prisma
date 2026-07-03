@@ -21,7 +21,8 @@ model Organization {
   defaultPaymentTermsDays Int      @default(30)
   invoiceFooter           String?
   invoiceNumberPrefix     String   @default("INV-")
-  invoiceNextNumber       Int      @default(1) // sequence value consumed at finalize
+  invoiceNextNumber       Int      @default(1) // vestigial: numbering is now highest-existing + 1, pre-filled + editable on the draft (D15)
+  timeDisplayFormat       String   @default("hms") // "hms" | "decimal" — how durations show in the timesheet views (Settings; TS union in code)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
@@ -234,7 +235,7 @@ model Invoice {
   clientId       String
   client         Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
   status         String       @default("draft") // "draft" | "sent" | "paid"
-  number         String? // assigned at finalize from org prefix + sequence; never on drafts
+  number         String? // pre-filled (highest + 1) + editable on the draft, frozen at finalize (D15)
 
   // draft choices (stored from the start, editable while draft)
   grouping           String  @default("task") // "task" | "person" | "summary" | "detailed"
@@ -245,6 +246,7 @@ model Invoice {
   issueDate          String? // "YYYY-MM-DD"
   dueDate            String? // null on draft = derive issueDate + terms at display; resolved + frozen at finalize (user-overridable)
   paymentTermsDays   Int // pre-filled from org default at creation, then owned here
+  subject            String? // free-text subject line shown above the line items
   poNumber           String?
   discountPercentBps Int? // XOR discountFlatMinor (app-validated)
   discountFlatMinor  Int?

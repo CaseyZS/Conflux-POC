@@ -34,6 +34,35 @@ export function formatHours(durationSeconds: number): string {
   return `${formatHoursInput(durationSeconds)}h`;
 }
 
+// The org's time-display preference (Settings, M5 seg 4): "hms" = "1:30",
+// "decimal" = "1.5h". A bare string union so lib/authz can carry it on the
+// Actor without importing this feature — the two literals must stay in step.
+export type DurationFormat = "hms" | "decimal";
+
+// The one dispatcher the timesheet views call so the H:MM-vs-decimal choice
+// lives in a single branch: display a duration in the org's chosen format.
+export function formatDurationAs(
+  durationSeconds: number,
+  format: DurationFormat,
+): string {
+  return format === "decimal"
+    ? formatHours(durationSeconds)
+    : formatDuration(durationSeconds);
+}
+
+// The input/prefill form of the same preference — no unit suffix, since
+// parseDurationToSeconds round-trips either shape ("1:30" or "1.5"). Edit
+// forms and the week grid's cells prefill with this so what you see is what
+// you'd re-type.
+export function formatDurationInputAs(
+  durationSeconds: number,
+  format: DurationFormat,
+): string {
+  return format === "decimal"
+    ? formatHoursInput(durationSeconds)
+    : formatDuration(durationSeconds);
+}
+
 // Whole seconds between two instants, floored and never negative. A running
 // timer's live portion — the action collapses this into durationSeconds on
 // stop, and the client tick adds it for display, so both use the same integer

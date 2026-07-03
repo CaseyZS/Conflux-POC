@@ -7,6 +7,7 @@ import { requireCapability } from "@/lib/authz";
 import { lineAmountMinor } from "@/lib/money";
 import { scopedDb, type ScopedDb } from "@/lib/scope";
 import { finalizeInvoice } from "./finalize";
+import { formatInvoiceNumber, nextInvoiceNumberValue } from "./numbering";
 import {
   parseDraftSettings,
   parseManualLine,
@@ -17,8 +18,9 @@ import {
 export type InvoiceActionResult = { status: "error"; message: string };
 
 // Every mutation below touches drafts only: finalized invoices are immutable
-// (no void/credit path in the POC), so "is it still a draft" is re-checked
-// server-side on each call — a stale editor tab must not edit a sent invoice.
+// (they're corrected by voiding, not editing — see voidInvoice), so "is it
+// still a draft" is re-checked server-side on each call — a stale editor tab
+// must not edit a sent invoice.
 async function findDraft(db: ScopedDb, invoiceId: string) {
   const invoice = await db.invoice.findFirst({
     where: { id: invoiceId },
@@ -59,7 +61,9 @@ export async function createInvoice(
 
   const projectIds = [
     ...new Set(
-      formData.getAll("projects").filter((v): v is string => typeof v === "string"),
+      formData
+        .getAll("projects")
+        .filter((v): v is string => typeof v === "string"),
     ),
   ];
   const projects = await db.project.findMany({
@@ -92,10 +96,19 @@ export async function createInvoice(
   const org = await db.organization.findFirst();
   if (!org) throw new Error("Organization not found.");
 
+  // Pre-fill the number to one past the highest existing (drafts + finalized),
+  // then let the user edit it on the draft — it's frozen at finalize.
+  const existing = await db.invoice.findMany({ select: { number: true } });
+  const number = formatInvoiceNumber(
+    org.invoiceNumberPrefix,
+    nextInvoiceNumberValue(existing.map((i) => i.number)),
+  );
+
   const invoice = await db.invoice.create({
     data: {
       organizationId: actor.organizationId,
       clientId: client.id,
+      number,
       paymentTermsDays: org.defaultPaymentTermsDays,
       taxRateBps: org.defaultTaxRateBps > 0 ? org.defaultTaxRateBps : null,
       footer: org.invoiceFooter,
@@ -123,8 +136,7 @@ export async function createInvoice(
 // --- Draft settings (grouping, toggles, dates, discount, tax, PO, footer) ---
 
 export type SaveDraftSettingsResult =
-  | { status: "success" }
-  | { status: "error"; errors: DraftSettingsFieldErrors };
+  { status: "success" } | { status: "error"; errors: DraftSettingsFieldErrors };
 
 export async function updateDraftSettings(
   invoiceId: string,
@@ -133,9 +145,12 @@ export async function updateDraftSettings(
   const actor = requireCapability(await requireActor(), "invoice.manage");
   const db = scopedDb(actor.organizationId);
   const invoice = await findDraft(db, invoiceId);
+  const org = await db.organization.findFirst();
+  if (!org) throw new Error("Organization not found.");
 
   const parsed = parseDraftSettings(
     {
+      number: formData.get("number"),
       grouping: formData.get("grouping"),
       showDate: formData.get("showDate"),
       showPerson: formData.get("showPerson"),
@@ -144,6 +159,7 @@ export async function updateDraftSettings(
       issueDate: formData.get("issueDate"),
       dueDate: formData.get("dueDate"),
       paymentTermsDays: formData.get("paymentTermsDays"),
+      subject: formData.get("subject"),
       poNumber: formData.get("poNumber"),
       discountKind: formData.get("discountKind"),
       discountValue: formData.get("discountValue"),
@@ -151,13 +167,36 @@ export async function updateDraftSettings(
       footer: formData.get("footer"),
     },
     invoice.client.currency,
+    org.invoiceNumberPrefix,
   );
   if (!parsed.ok) return { status: "error", errors: parsed.errors };
 
-  await db.invoice.update({ where: { id: invoiceId }, data: parsed.data });
+  try {
+    await db.invoice.update({ where: { id: invoiceId }, data: parsed.data });
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      return {
+        status: "error",
+        errors: { number: "That invoice number is already in use." },
+      };
+    }
+    throw error;
+  }
 
   revalidateInvoice(invoiceId);
   return { status: "success" };
+}
+
+// A Prisma unique-constraint violation (e.g. two invoices with the same
+// number) surfaces as code P2002; detected structurally so this module needn't
+// import the Prisma error class.
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2002"
+  );
 }
 
 // --- Project selections (which projects feed the draft) ---
@@ -172,7 +211,9 @@ export async function updateProjectSelections(
 
   const projectIds = [
     ...new Set(
-      formData.getAll("projects").filter((v): v is string => typeof v === "string"),
+      formData
+        .getAll("projects")
+        .filter((v): v is string => typeof v === "string"),
     ),
   ];
   const projects = await db.project.findMany({
@@ -213,8 +254,7 @@ export async function updateProjectSelections(
 // --- Manual lines (exist as rows from the draft on; source = "manual") ---
 
 export type SaveManualLineResult =
-  | { status: "success" }
-  | { status: "error"; errors: ManualLineFieldErrors };
+  { status: "success" } | { status: "error"; errors: ManualLineFieldErrors };
 
 async function validateAttribution(
   db: ScopedDb,
@@ -246,7 +286,9 @@ export async function addManualLine(
     invoice.client.currency,
   );
   if (!parsed.ok) return { status: "error", errors: parsed.errors };
-  if (!(await validateAttribution(db, invoice.clientId, parsed.data.projectId))) {
+  if (
+    !(await validateAttribution(db, invoice.clientId, parsed.data.projectId))
+  ) {
     return {
       status: "error",
       errors: { description: "That project doesn't belong to this client." },
@@ -301,7 +343,9 @@ export async function updateManualLine(
     invoice.client.currency,
   );
   if (!parsed.ok) return { status: "error", errors: parsed.errors };
-  if (!(await validateAttribution(db, invoice.clientId, parsed.data.projectId))) {
+  if (
+    !(await validateAttribution(db, invoice.clientId, parsed.data.projectId))
+  ) {
     return {
       status: "error",
       errors: { description: "That project doesn't belong to this client." },
@@ -378,6 +422,62 @@ export async function markInvoicePaid(invoiceId: string): Promise<void> {
   });
 
   revalidateInvoice(invoiceId);
+}
+
+// Void a finalized invoice (sent or paid) that turns out to be wrong — the
+// correction path, since a finalized invoice can't be edited. The mirror of
+// finalize: the number and snapshot stay on record (marked void, for the audit
+// trail), and the billed time entries + fixed fees are RELEASED back to the
+// unbilled pool so a corrected invoice can bill them again. One transaction so
+// a failure can't half-release the work. No credit-note document in the POC —
+// that's the deferred, full-version path (see requirements/invoicing.md).
+export async function voidInvoice(
+  invoiceId: string,
+): Promise<InvoiceActionResult | { status: "success" }> {
+  const actor = requireCapability(await requireActor(), "invoice.manage");
+  const db = scopedDb(actor.organizationId);
+
+  const result = await db.$transaction(async (tx) => {
+    const invoice = await tx.invoice.findFirst({ where: { id: invoiceId } });
+    if (!invoice) {
+      return { status: "error", message: "Invoice not found." } as const;
+    }
+    if (invoice.status === "draft") {
+      return {
+        status: "error",
+        message: "A draft isn't finalized — delete it instead of voiding.",
+      } as const;
+    }
+    if (invoice.status === "void") {
+      return {
+        status: "error",
+        message: "This invoice is already void.",
+      } as const;
+    }
+
+    // Release the anti-double-bill links so the work returns to the pool.
+    await tx.timeEntry.updateMany({
+      where: { invoiceId },
+      data: { invoiceId: null },
+    });
+    await tx.project.updateMany({
+      where: { fixedFeeInvoiceId: invoiceId },
+      data: { fixedFeeInvoiceId: null },
+    });
+    await tx.invoice.update({
+      where: { id: invoiceId },
+      data: { status: "void" },
+    });
+    return { status: "success" } as const;
+  });
+
+  if (result.status === "error") return result;
+
+  revalidateInvoice(invoiceId);
+  // The released entries are editable/billable again in the timesheet.
+  revalidatePath("/time");
+  revalidatePath("/time/week");
+  return { status: "success" };
 }
 
 // Deleting a draft removes just the draft and its manual lines + selections

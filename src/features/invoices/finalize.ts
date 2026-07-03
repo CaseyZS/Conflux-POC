@@ -1,25 +1,18 @@
 // Finalize: the one transaction that turns a draft into a financial record
 // (G5's licensed snapshot). Everything happens inside db.$transaction — the
-// gapless number consumed from the org counter, the line/total/bill-to/from
-// snapshot, and the anti-double-bill links — so a failure at any step leaves
-// no half-finalized invoice. Not a server action itself: the finalizeDraft
-// action wraps it with the guard chain, and the seed calls it directly so
-// seeded history goes through the exact code the button runs.
+// number frozen (pre-filled + editable on the draft, D15), the
+// line/total/bill-to/from snapshot, and the anti-double-bill links — so a
+// failure at any step leaves no half-finalized invoice. Not a server action
+// itself: the finalizeDraft action wraps it with the guard chain, and the seed
+// calls it directly so seeded history goes through the exact code the button runs.
 
 import { addDays, todayLocal } from "@/lib/dates";
 import type { ScopedDb } from "@/lib/scope";
 import { computeDraft } from "./draft";
+import { formatInvoiceNumber, nextInvoiceNumberValue } from "./numbering";
 
 export type FinalizeResult =
-  | { ok: true; number: string }
-  | { ok: false; message: string };
-
-// "INV-" + 1 → "INV-0001": four digits keeps numbers sortable-looking in a
-// list without pretending to be a spec — the padding is display-at-assign,
-// stored on the snapshot like every other finalized value.
-export function formatInvoiceNumber(prefix: string, value: number): string {
-  return `${prefix}${String(value).padStart(4, "0")}`;
-}
+  { ok: true; number: string } | { ok: false; message: string };
 
 export async function finalizeInvoice(
   db: ScopedDb,
@@ -63,18 +56,20 @@ export async function finalizeInvoice(
       };
     }
 
-    // The gapless number: read + increment + assign in this transaction, the
-    // only place a number is ever produced.
+    // The number was pre-filled and made editable on the draft, so finalize
+    // just freezes whatever it holds. Safety net: a draft with no number gets
+    // one past the highest existing number here. The unique index is the real
+    // guard against collisions (whether from an edit or this fallback).
     const org = await tx.organization.findFirst();
     if (!org) throw new Error("Organization not found.");
-    const number = formatInvoiceNumber(
-      org.invoiceNumberPrefix,
-      org.invoiceNextNumber,
-    );
-    await tx.organization.update({
-      where: { id: org.id },
-      data: { invoiceNextNumber: org.invoiceNextNumber + 1 },
-    });
+    let number = invoice.number;
+    if (!number) {
+      const existing = await tx.invoice.findMany({ select: { number: true } });
+      number = formatInvoiceNumber(
+        org.invoiceNumberPrefix,
+        nextInvoiceNumberValue(existing.map((i) => i.number)),
+      );
+    }
 
     // Snapshot the derived lines as rows; manual lines already are rows and
     // just take their print positions after the derived block (position is

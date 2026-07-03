@@ -34,7 +34,11 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { saveWeekCell } from "./actions";
-import { formatDuration } from "./duration";
+import {
+  formatDurationAs,
+  formatDurationInputAs,
+  type DurationFormat,
+} from "./duration";
 import { LiveDuration } from "./timer-controls";
 import type { ProjectOptions, WeekCell, WeekRow } from "./queries";
 
@@ -80,11 +84,13 @@ export function WeekGrid({
   rows,
   projects,
   today,
+  format,
 }: {
   days: WeekDayColumn[];
   rows: WeekRow[];
   projects: ProjectOptions[];
   today: string;
+  format: DurationFormat;
 }) {
   const [extraRows, setExtraRows] = useState<ExtraRow[]>([]);
   const serverIds = new Set(rows.map((row) => row.projectTaskId));
@@ -138,13 +144,19 @@ export function WeekGrid({
           ) : (
             <>
               {rows.map((row) => (
-                <GridRow key={row.projectTaskId} row={row} today={today} />
+                <GridRow
+                  key={row.projectTaskId}
+                  row={row}
+                  today={today}
+                  format={format}
+                />
               ))}
               {visibleExtras.map((extra) => (
                 <GridRow
                   key={extra.projectTaskId}
                   row={toWeekRow(extra, days)}
                   today={today}
+                  format={format}
                 />
               ))}
             </>
@@ -162,11 +174,11 @@ export function WeekGrid({
                     days[index].date === today && "bg-muted/40",
                   )}
                 >
-                  {formatDuration(seconds)}
+                  {formatDurationAs(seconds, format)}
                 </TableCell>
               ))}
               <TableCell className="text-right font-semibold tabular-nums">
-                {formatDuration(grandTotal)}
+                {formatDurationAs(grandTotal, format)}
               </TableCell>
             </TableRow>
           </TableFooter>
@@ -183,7 +195,15 @@ export function WeekGrid({
   );
 }
 
-function GridRow({ row, today }: { row: WeekRow; today: string }) {
+function GridRow({
+  row,
+  today,
+  format,
+}: {
+  row: WeekRow;
+  today: string;
+  format: DurationFormat;
+}) {
   const rowTotal = row.cells.reduce((sum, cell) => sum + cell.totalSeconds, 0);
   return (
     <TableRow>
@@ -201,17 +221,25 @@ function GridRow({ row, today }: { row: WeekRow; today: string }) {
             cell.date === today && "bg-muted/40",
           )}
         >
-          <GridCell cell={cell} row={row} />
+          <GridCell cell={cell} row={row} format={format} />
         </TableCell>
       ))}
       <TableCell className="text-right font-medium tabular-nums">
-        {formatDuration(rowTotal)}
+        {formatDurationAs(rowTotal, format)}
       </TableCell>
     </TableRow>
   );
 }
 
-function GridCell({ cell, row }: { cell: WeekCell; row: WeekRow }) {
+function GridCell({
+  cell,
+  row,
+  format,
+}: {
+  cell: WeekCell;
+  row: WeekRow;
+  format: DurationFormat;
+}) {
   if (cell.running && cell.startedAtMs !== null) {
     return (
       <Link
@@ -222,6 +250,7 @@ function GridCell({ cell, row }: { cell: WeekCell; row: WeekRow }) {
         <LiveDuration
           baseSeconds={cell.totalSeconds}
           startedAtMs={cell.startedAtMs}
+          format={format}
           className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400"
         />
       </Link>
@@ -233,7 +262,7 @@ function GridCell({ cell, row }: { cell: WeekCell; row: WeekRow }) {
         title="This day's time is on an invoice and can't be changed"
         className="inline-block py-1.5 text-muted-foreground tabular-nums"
       >
-        {formatDuration(cell.totalSeconds)}
+        {formatDurationAs(cell.totalSeconds, format)}
       </span>
     );
   }
@@ -244,7 +273,7 @@ function GridCell({ cell, row }: { cell: WeekCell; row: WeekRow }) {
         title={`${cell.entryCount} entries — edit them in the day view`}
         className="inline-block py-1.5 tabular-nums underline decoration-dotted underline-offset-4"
       >
-        {formatDuration(cell.totalSeconds)}
+        {formatDurationAs(cell.totalSeconds, format)}
       </Link>
     );
   }
@@ -264,6 +293,7 @@ function GridCell({ cell, row }: { cell: WeekCell; row: WeekRow }) {
       projectTaskId={row.projectTaskId}
       date={cell.date}
       initialSeconds={cell.totalSeconds}
+      format={format}
     />
   );
 }
@@ -277,12 +307,15 @@ function WeekCellInput({
   projectTaskId,
   date,
   initialSeconds,
+  format,
 }: {
   projectTaskId: string;
   date: string;
   initialSeconds: number;
+  format: DurationFormat;
 }) {
-  const initial = initialSeconds === 0 ? "" : formatDuration(initialSeconds);
+  const initial =
+    initialSeconds === 0 ? "" : formatDurationInputAs(initialSeconds, format);
   const [value, setValue] = useState(initial);
   const [note, setNote] = useState<
     { kind: "confirm" } | { kind: "error"; message: string } | null

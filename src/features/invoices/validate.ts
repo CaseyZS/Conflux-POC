@@ -5,13 +5,16 @@
 
 import { isIsoDate } from "@/lib/dates";
 import { parseMoneyToMinor } from "@/lib/money";
+import { formatInvoiceNumber } from "./numbering";
 
-export const INVOICE_STATUSES = ["draft", "sent", "paid"] as const;
+export const INVOICE_STATUSES = ["draft", "sent", "paid", "void"] as const;
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 
-// Finalize is the draft→sent transition (assigns the number, snapshots);
-// sent→paid is the mark-as-paid click. No other movement exists — finalized
-// invoices are immutable and there's no void/credit path in the POC.
+// Finalize is the draft→sent transition (freezes the number, snapshots);
+// sent→paid is the mark-as-paid click. A finalized invoice (sent or paid) can
+// be voided when it's wrong — a cancellation that keeps the record but releases
+// the billed work. No credit-note document in the POC (deferred to the full
+// version); void is the correction path.
 export function isInvoiceStatus(value: string): value is InvoiceStatus {
   return (INVOICE_STATUSES as readonly string[]).includes(value);
 }
@@ -56,9 +59,16 @@ export function formatBpsPercent(bps: number): string {
   return fraction ? `${whole}.${fraction}` : `${whole}`;
 }
 
+// Payment terms as standard net-terms language: 30 → "NET30", 0 (or less) →
+// "Due on receipt". This is the label the invoice shows instead of "30 days".
+export function formatPaymentTerms(days: number): string {
+  return days <= 0 ? "Due on receipt" : `NET${days}`;
+}
+
 // --- Draft settings (everything editable on a draft besides lines) ---
 
 export type DraftSettingsInput = {
+  number: string; // pre-filled (highest + 1) but user-editable; required
   grouping: InvoiceGrouping;
   showDate: boolean;
   showPerson: boolean;
@@ -67,6 +77,7 @@ export type DraftSettingsInput = {
   issueDate: string | null; // null = "today" derived at display/finalize
   dueDate: string | null; // null = derive issueDate + terms
   paymentTermsDays: number;
+  subject: string | null;
   poNumber: string | null;
   discountPercentBps: number | null; // XOR discountFlatMinor
   discountFlatMinor: number | null;
@@ -76,6 +87,7 @@ export type DraftSettingsInput = {
 
 export type DraftSettingsFieldErrors = Partial<
   Record<
+    | "number"
     | "grouping"
     | "issueDate"
     | "dueDate"
@@ -96,6 +108,7 @@ export type DraftSettingsResult =
 export function parseDraftSettings(
   raw: Record<string, unknown>,
   currency: string,
+  numberPrefix: string,
 ): DraftSettingsResult {
   const errors: DraftSettingsFieldErrors = {};
 
@@ -103,6 +116,14 @@ export function parseDraftSettings(
   if (!isInvoiceGrouping(groupingRaw)) {
     errors.grouping = "Choose how to group the time lines.";
     return { ok: false, errors };
+  }
+
+  // Only the numeric tail is user-editable; the prefix is the org's, applied
+  // here. Digits only keeps the sequence unambiguous (no letters/symbols).
+  const numberSeq = asTrimmedString(raw.number);
+  const numberSeqValue = /^\d{1,9}$/.test(numberSeq) ? Number(numberSeq) : NaN;
+  if (Number.isNaN(numberSeqValue) || numberSeqValue < 1) {
+    errors.number = "The invoice number is digits only (e.g. 42).";
   }
 
   const issueDate = emptyToNull(asTrimmedString(raw.issueDate));
@@ -150,6 +171,7 @@ export function parseDraftSettings(
   return {
     ok: true,
     data: {
+      number: formatInvoiceNumber(numberPrefix, numberSeqValue),
       grouping: groupingRaw,
       showDate: raw.showDate != null,
       showPerson: raw.showPerson != null,
@@ -158,6 +180,7 @@ export function parseDraftSettings(
       issueDate,
       dueDate,
       paymentTermsDays,
+      subject: emptyToNull(asTrimmedString(raw.subject)),
       poNumber: emptyToNull(asTrimmedString(raw.poNumber)),
       discountPercentBps,
       discountFlatMinor,
@@ -206,7 +229,10 @@ export function parseManualLine(
     quantityMilli = Number(whole) * 1000 + Number(fraction.padEnd(3, "0") || 0);
   }
 
-  const unitRateMinor = parseMoneyToMinor(asTrimmedString(raw.unitRate), currency);
+  const unitRateMinor = parseMoneyToMinor(
+    asTrimmedString(raw.unitRate),
+    currency,
+  );
   if (unitRateMinor === null) {
     errors.unitRate = "Enter a plain amount (like 150 or 99.50).";
   }

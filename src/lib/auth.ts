@@ -67,6 +67,7 @@ export const currentActor = cache(async (): Promise<Actor | null> => {
     where: { userId, active: true },
     include: {
       user: true,
+      organization: true, // for the org-level display preference carried on the Actor
       roles: { include: { role: { include: { capabilities: true } } } },
     },
   });
@@ -84,6 +85,10 @@ export const currentActor = cache(async (): Promise<Actor | null> => {
         held.role.capabilities.map((row) => row.capability),
       ),
     ),
+    timeFormat:
+      membership.organization.timeDisplayFormat === "decimal"
+        ? "decimal"
+        : "hms",
   };
 });
 

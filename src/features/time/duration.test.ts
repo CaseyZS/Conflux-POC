@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   elapsedSeconds,
   formatDuration,
+  formatDurationAs,
+  formatDurationInputAs,
   formatHours,
   formatHoursInput,
   parseDurationToSeconds,
@@ -53,6 +55,29 @@ describe("formatHours (the decimal alternative)", () => {
   it("handles long durations", () => {
     expect(formatHours(360000)).toBe("100h");
     expect(formatHours(362700)).toBe("100.75h");
+  });
+});
+
+describe("the org-preference dispatchers", () => {
+  it("formatDurationAs picks the display format", () => {
+    expect(formatDurationAs(5400, "hms")).toBe("1:30");
+    expect(formatDurationAs(5400, "decimal")).toBe("1.5h");
+  });
+
+  it("formatDurationInputAs picks the input form (decimal drops the suffix)", () => {
+    expect(formatDurationInputAs(5400, "hms")).toBe("1:30");
+    expect(formatDurationInputAs(5400, "decimal")).toBe("1.5");
+  });
+
+  it("both input forms round-trip through parseDurationToSeconds", () => {
+    for (const seconds of [0, 3600, 5400, 4500, 27000]) {
+      expect(
+        parseDurationToSeconds(formatDurationInputAs(seconds, "hms")),
+      ).toBe(seconds);
+      expect(
+        parseDurationToSeconds(formatDurationInputAs(seconds, "decimal")),
+      ).toBe(seconds);
+    }
   });
 });
 

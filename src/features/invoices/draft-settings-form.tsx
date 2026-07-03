@@ -14,6 +14,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "@/components/submit-button";
 import { updateDraftSettings } from "./actions";
+import { splitInvoiceNumber } from "./numbering";
 import type { InvoiceView } from "./queries";
 import type { DraftSettingsFieldErrors, InvoiceGrouping } from "./validate";
 
@@ -43,6 +44,19 @@ const TOGGLES: { name: string; label: string }[] = [
 // reflects what's set here. Checkbox/select values submit via hidden inputs
 // (state is the source of truth), the same pattern as the new-invoice form.
 export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
+  // Freeze the draft's field values at first render. Saving revalidates the page
+  // to refresh the derived line-item table above, which re-renders this form
+  // with a fresh `invoice`; uncontrolled inputs keep whatever the user typed
+  // regardless, so pinning defaultValue to this initial snapshot both matches
+  // React's behavior and stops Base UI warning that an uncontrolled field's
+  // defaultValue changed after init. Display-only text below stays live (reads
+  // `invoice`) so the derived due date still updates after a save.
+  const [initial] = useState(invoice);
+  // The stored number is the full "INV-0002"; only the digits are editable, so
+  // split off the fixed prefix to show it as static text beside the input.
+  const { prefix: numberPrefix, seq: numberSeq } = splitInvoiceNumber(
+    initial.number ?? "",
+  );
   const [errors, setErrors] = useState<DraftSettingsFieldErrors>({});
   const [saved, setSaved] = useState(false);
   const [grouping, setGrouping] = useState<string | null>(invoice.grouping);
@@ -79,6 +93,30 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
 
   return (
     <form action={submit} className="grid gap-4">
+      <div className="grid gap-2 sm:max-w-xs">
+        <Label htmlFor="invoice-number">Invoice number</Label>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-medium tabular-nums text-muted-foreground">
+            {numberPrefix}
+          </span>
+          <Input
+            id="invoice-number"
+            name="number"
+            inputMode="numeric"
+            defaultValue={numberSeq}
+            aria-invalid={errors.number ? true : undefined}
+            className="w-28"
+          />
+        </div>
+        {errors.number ? (
+          <p className="text-sm text-destructive">{errors.number}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Only the number is editable; the prefix is fixed.
+          </p>
+        )}
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="invoice-grouping">Group time lines</Label>
@@ -111,7 +149,10 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
           <legend className="text-sm font-medium">Line detail</legend>
           <div className="flex flex-wrap gap-x-4 gap-y-2 pt-1">
             {TOGGLES.map((t) => (
-              <Label key={t.name} className="flex items-center gap-2 font-normal">
+              <Label
+                key={t.name}
+                className="flex items-center gap-2 font-normal"
+              >
                 <Checkbox
                   checked={toggles.has(t.name)}
                   onCheckedChange={(on) => toggle(t.name, on === true)}
@@ -134,7 +175,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
             id="invoice-issue-date"
             name="issueDate"
             type="date"
-            defaultValue={invoice.issueDate ?? ""}
+            defaultValue={initial.issueDate ?? ""}
             aria-invalid={errors.issueDate ? true : undefined}
           />
           <p className="text-xs text-muted-foreground">
@@ -150,7 +191,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
             id="invoice-terms"
             name="paymentTermsDays"
             inputMode="numeric"
-            defaultValue={String(invoice.paymentTermsDays)}
+            defaultValue={String(initial.paymentTermsDays)}
             aria-invalid={errors.paymentTermsDays ? true : undefined}
           />
           {errors.paymentTermsDays && (
@@ -165,7 +206,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
             id="invoice-due-date"
             name="dueDate"
             type="date"
-            defaultValue={invoice.dueDate ?? ""}
+            defaultValue={initial.dueDate ?? ""}
             aria-invalid={errors.dueDate ? true : undefined}
           />
           <p className="text-xs text-muted-foreground">
@@ -213,7 +254,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
               name="discountValue"
               inputMode="decimal"
               placeholder={discountKind === "percent" ? "10" : "250.00"}
-              defaultValue={invoice.discountValueInput}
+              defaultValue={initial.discountValueInput}
               aria-invalid={errors.discount ? true : undefined}
             />
             {errors.discount && (
@@ -228,7 +269,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
             name="taxRate"
             inputMode="decimal"
             placeholder="8.25"
-            defaultValue={invoice.taxRateInput}
+            defaultValue={initial.taxRateInput}
             aria-invalid={errors.taxRate ? true : undefined}
           />
           <p className="text-xs text-muted-foreground">
@@ -240,13 +281,23 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
         </div>
       </div>
 
+      <div className="grid gap-2">
+        <Label htmlFor="invoice-subject">Subject</Label>
+        <Input
+          id="invoice-subject"
+          name="subject"
+          defaultValue={initial.subject ?? ""}
+          placeholder="Shown above the line items (e.g. Website redesign — June 2026)"
+        />
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="invoice-po">PO number</Label>
           <Input
             id="invoice-po"
             name="poNumber"
-            defaultValue={invoice.poNumber ?? ""}
+            defaultValue={initial.poNumber ?? ""}
             placeholder="Client's purchase order"
           />
         </div>
@@ -256,7 +307,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
             id="invoice-footer"
             name="footer"
             rows={2}
-            defaultValue={invoice.footer ?? ""}
+            defaultValue={initial.footer ?? ""}
             placeholder="Notes / terms shown at the bottom"
           />
         </div>
@@ -264,9 +315,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
 
       <div className="flex items-center gap-3">
         <SubmitButton pendingText="Saving…">Save settings</SubmitButton>
-        {saved && (
-          <span className="text-sm text-muted-foreground">Saved.</span>
-        )}
+        {saved && <span className="text-sm text-muted-foreground">Saved.</span>}
       </div>
     </form>
   );

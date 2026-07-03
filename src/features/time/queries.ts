@@ -9,7 +9,7 @@
 
 import type { Actor } from "@/lib/authz";
 import { scopedDb } from "@/lib/scope";
-import { formatDuration } from "./duration";
+import { formatDurationAs, formatDurationInputAs } from "./duration";
 
 export type TimeEntryRow = {
   id: string;
@@ -55,8 +55,8 @@ export async function listDayEntries(
     billable: entry.projectTask.billable,
     billed: entry.invoiceId !== null,
     durationSeconds: entry.durationSeconds,
-    hoursLabel: formatDuration(entry.durationSeconds),
-    hoursInput: formatDuration(entry.durationSeconds),
+    hoursLabel: formatDurationAs(entry.durationSeconds, actor.timeFormat),
+    hoursInput: formatDurationInputAs(entry.durationSeconds, actor.timeFormat),
     running: entry.startedAt !== null,
     startedAtMs: entry.startedAt?.getTime() ?? null,
   }));

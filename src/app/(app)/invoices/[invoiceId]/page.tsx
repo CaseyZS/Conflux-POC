@@ -4,13 +4,17 @@ import { requireActor } from "@/lib/auth";
 import { requireCapability } from "@/lib/authz";
 import { getInvoiceView } from "@/features/invoices/queries";
 import { InvoiceStatusBadge } from "@/features/invoices/status-badge";
+import { InvoiceDocument } from "@/features/invoices/invoice-document";
 import { DraftSettingsForm } from "@/features/invoices/draft-settings-form";
 import { SelectionEditor } from "@/features/invoices/selection-editor";
 import { ManualLineDialog } from "@/features/invoices/manual-line-dialog";
 import { DeleteDraftButton } from "@/features/invoices/delete-draft-button";
+import { DownloadPdfButton } from "@/features/invoices/download-pdf-button";
+import { PreviewButton } from "@/features/invoices/preview-button";
 import {
   FinalizeButton,
   MarkPaidButton,
+  VoidButton,
 } from "@/features/invoices/lifecycle-buttons";
 import {
   Table,
@@ -22,9 +26,9 @@ import {
 } from "@/components/ui/table";
 
 // One page for both lifecycle halves: a draft renders as an editor over
-// live-derived lines (G5 — nothing is stored until finalize), a finalized
-// invoice renders read-only from its snapshot. The polished document view +
-// PDF is M5; this page is the working view.
+// live-derived lines (G5 — nothing is stored until finalize); a finalized
+// invoice renders through the polished InvoiceDocument (the same component the
+// PDF prints, G9).
 export default async function InvoicePage({
   params,
 }: {
@@ -53,18 +57,55 @@ export default async function InvoicePage({
           <InvoiceStatusBadge status={invoice.status} />
         </div>
         <div className="flex items-center gap-2">
-          {draft && (
+          {draft ? (
             <>
+              <PreviewButton invoiceId={invoice.id} />
               <DeleteDraftButton invoiceId={invoice.id} />
               <FinalizeButton invoiceId={invoice.id} />
             </>
-          )}
-          {invoice.status === "sent" && (
-            <MarkPaidButton invoiceId={invoice.id} />
+          ) : (
+            <>
+              <DownloadPdfButton invoiceId={invoice.id} />
+              {invoice.status === "sent" && (
+                <MarkPaidButton invoiceId={invoice.id} />
+              )}
+              {(invoice.status === "sent" || invoice.status === "paid") && (
+                <VoidButton invoiceId={invoice.id} />
+              )}
+            </>
           )}
         </div>
       </div>
 
+      {draft ? (
+        <DraftWorkspace invoice={invoice} />
+      ) : (
+        <div className="mt-6">
+          {invoice.status === "void" && (
+            <p className="mb-4 rounded-md bg-rose-50 px-4 py-3 text-sm text-rose-900">
+              This invoice was voided — the time entries and fixed fees it
+              billed were released back to the unbilled pool. Create a new
+              invoice to bill them correctly.
+            </p>
+          )}
+          <InvoiceDocument invoice={invoice} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The draft editing surface: the live-derived bill-to/from card, the line
+// table with manual-line editing, the running totals, and the two editors
+// (settings + which projects feed the invoice). All of it disappears at
+// finalize, replaced by the read-only document above.
+function DraftWorkspace({
+  invoice,
+}: {
+  invoice: NonNullable<Awaited<ReturnType<typeof getInvoiceView>>>;
+}) {
+  return (
+    <>
       <div className="mt-6 grid gap-4 rounded-lg border p-4 sm:grid-cols-3">
         <div>
           <h2 className="text-xs font-medium uppercase text-muted-foreground">
@@ -108,7 +149,7 @@ export default async function InvoicePage({
             </div>
             <div className="flex justify-between gap-2">
               <dt className="text-muted-foreground">Terms</dt>
-              <dd>{invoice.paymentTermsDays} days</dd>
+              <dd>{invoice.paymentTermsLabel}</dd>
             </div>
             {invoice.poNumber && (
               <div className="flex justify-between gap-2">
@@ -121,31 +162,34 @@ export default async function InvoicePage({
               <dd>{invoice.currency}</dd>
             </div>
           </dl>
-          {draft && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Pulled live until finalized.
-            </p>
-          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            Pulled live until finalized.
+          </p>
         </div>
       </div>
 
       <section className="mt-8">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium">Lines</h2>
-          {draft && (
-            <ManualLineDialog
-              invoiceId={invoice.id}
-              currency={invoice.currency}
-              projects={invoice.attributableProjects}
-            />
-          )}
+          <ManualLineDialog
+            invoiceId={invoice.id}
+            currency={invoice.currency}
+            projects={invoice.attributableProjects}
+          />
         </div>
+
+        {invoice.subject && (
+          <p className="mt-2 text-sm">
+            <span className="font-medium">Subject:</span>{" "}
+            <span className="text-muted-foreground">{invoice.subject}</span>
+          </p>
+        )}
 
         {invoice.lines.length === 0 ? (
           <div className="mt-4 rounded-lg border border-dashed p-8 text-center">
             <p className="text-sm text-muted-foreground">
-              Nothing to bill yet — select projects with unbilled time below,
-              or add a manual line.
+              Nothing to bill yet — select projects with unbilled time below, or
+              add a manual line.
             </p>
           </div>
         ) : (
@@ -156,7 +200,7 @@ export default async function InvoicePage({
                 <TableHead className="w-20 text-right">Qty</TableHead>
                 <TableHead className="w-28 text-right">Rate</TableHead>
                 <TableHead className="w-28 text-right">Amount</TableHead>
-                {draft && <TableHead className="w-16" />}
+                <TableHead className="w-16" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -179,18 +223,16 @@ export default async function InvoicePage({
                   <TableCell className="text-right tabular-nums">
                     {line.amountLabel}
                   </TableCell>
-                  {draft && (
-                    <TableCell className="text-right">
-                      {line.source === "manual" && (
-                        <ManualLineDialog
-                          invoiceId={invoice.id}
-                          currency={invoice.currency}
-                          projects={invoice.attributableProjects}
-                          line={line}
-                        />
-                      )}
-                    </TableCell>
-                  )}
+                  <TableCell className="text-right">
+                    {line.source === "manual" && (
+                      <ManualLineDialog
+                        invoiceId={invoice.id}
+                        currency={invoice.currency}
+                        projects={invoice.attributableProjects}
+                        line={line}
+                      />
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -212,7 +254,9 @@ export default async function InvoicePage({
           )}
           {invoice.taxSummary && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{invoice.taxSummary}</span>
+              <span className="text-muted-foreground">
+                {invoice.taxSummary}
+              </span>
               <span className="tabular-nums">{invoice.taxLabel}</span>
             </div>
           )}
@@ -223,40 +267,30 @@ export default async function InvoicePage({
         </div>
       </section>
 
-      {draft ? (
-        <>
-          <section className="mt-8 rounded-lg border p-4">
-            <h2 className="text-lg font-medium">Invoice settings</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Grouping and detail change how the time lines above present —
-              the same entries, itemized differently.
-            </p>
-            <div className="mt-4">
-              <DraftSettingsForm invoice={invoice} />
-            </div>
-          </section>
+      <section className="mt-8 rounded-lg border p-4">
+        <h2 className="text-lg font-medium">Invoice settings</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Grouping and detail change how the time lines above present — the same
+          entries, itemized differently.
+        </p>
+        <div className="mt-4">
+          <DraftSettingsForm invoice={invoice} />
+        </div>
+      </section>
 
-          <section className="mt-8 rounded-lg border p-4">
-            <h2 className="text-lg font-medium">What feeds this invoice</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Unbilled billable time from checked hourly projects and
-              once-only fixed fees. Time logged later flows in until finalize.
-            </p>
-            <div className="mt-4">
-              <SelectionEditor
-                invoiceId={invoice.id}
-                choices={invoice.selectionChoices}
-              />
-            </div>
-          </section>
-        </>
-      ) : (
-        invoice.footer && (
-          <p className="mt-8 whitespace-pre-line border-t pt-4 text-sm text-muted-foreground">
-            {invoice.footer}
-          </p>
-        )
-      )}
-    </div>
+      <section className="mt-8 rounded-lg border p-4">
+        <h2 className="text-lg font-medium">What feeds this invoice</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Unbilled billable time from checked hourly projects and once-only
+          fixed fees. Time logged later flows in until finalize.
+        </p>
+        <div className="mt-4">
+          <SelectionEditor
+            invoiceId={invoice.id}
+            choices={invoice.selectionChoices}
+          />
+        </div>
+      </section>
+    </>
   );
 }
