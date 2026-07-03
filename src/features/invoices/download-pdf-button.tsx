@@ -7,6 +7,7 @@ export function DownloadPdfButton({ invoiceId }: { invoiceId: string }) {
     <Button
       variant="outline"
       size="sm"
+      nativeButton={false}
       render={<a href={`/invoices/${invoiceId}/pdf`} />}
     >
       Download PDF
