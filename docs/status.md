@@ -38,7 +38,8 @@ The single source of "where we are and what's next," so any session can resume w
 ## Next up (ordered)
 
 1. Finish the M3 segments above; **you review + merge** `feature/m3-time-tracking` after the hands-on exit check (track a real day live and retroactively; both timesheet views browsable; exactly one timer can run).
-2. **M4 — Invoicing lifecycle** per `docs/plan.md`.
+2. **Projects index page** (requested 2026-07-02) — small side item on its own `feature/projects-index` branch off `develop` after M3 merges: a top-level `/projects` list across clients + sidebar link, reusing the M2 projects read layer. Not part of any milestone; nothing depends on it.
+3. **M4 — Invoicing lifecycle** per `docs/plan.md`.
 
 ## Open questions / deferred decisions
 
