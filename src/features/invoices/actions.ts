@@ -6,6 +6,7 @@ import { requireActor } from "@/lib/auth";
 import { requireCapability } from "@/lib/authz";
 import { lineAmountMinor } from "@/lib/money";
 import { scopedDb, type ScopedDb } from "@/lib/scope";
+import { finalizeInvoice } from "./finalize";
 import {
   parseDraftSettings,
   parseManualLine,
@@ -338,6 +339,45 @@ export async function deleteManualLine(lineId: string): Promise<void> {
   await db.invoiceLine.delete({ where: { id: lineId } });
 
   revalidateInvoice(line.invoiceId);
+}
+
+// --- Lifecycle: finalize (draft → sent), then mark as paid ---
+
+export async function finalizeDraft(
+  invoiceId: string,
+): Promise<InvoiceActionResult | { status: "success" }> {
+  const actor = requireCapability(await requireActor(), "invoice.manage");
+  const db = scopedDb(actor.organizationId);
+
+  const result = await finalizeInvoice(db, invoiceId);
+  if (!result.ok) return { status: "error", message: result.message };
+
+  revalidateInvoice(invoiceId);
+  // Newly billed entries render locked in the timesheet views.
+  revalidatePath("/time");
+  revalidatePath("/time/week");
+  return { status: "success" };
+}
+
+// The second manual flag: sent → paid, a human recording a payment (no
+// gateway in the POC). No backward transitions — like finalize, the flags
+// only move forward.
+export async function markInvoicePaid(invoiceId: string): Promise<void> {
+  const actor = requireCapability(await requireActor(), "invoice.manage");
+  const db = scopedDb(actor.organizationId);
+
+  const invoice = await db.invoice.findFirst({ where: { id: invoiceId } });
+  if (!invoice) throw new Error("Invoice not found.");
+  if (invoice.status !== "sent") {
+    throw new Error("Only a sent invoice can be marked paid.");
+  }
+
+  await db.invoice.update({
+    where: { id: invoiceId },
+    data: { status: "paid" },
+  });
+
+  revalidateInvoice(invoiceId);
 }
 
 // Deleting a draft removes just the draft and its manual lines + selections

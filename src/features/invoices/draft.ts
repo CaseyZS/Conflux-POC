@@ -51,6 +51,10 @@ export type DraftSource = {
   }[];
 };
 
+// The slice of the scoped client the computation needs — satisfied by the
+// client itself and by the transaction client finalize hands in.
+export type DraftDb = Pick<ScopedDb, "timeEntry">;
+
 export type ComputedDraft = {
   timeLines: DerivedLine[];
   // Fee lines keep their project id — finalize stamps it onto the line row
@@ -64,7 +68,7 @@ export type ComputedDraft = {
 };
 
 export async function computeDraft(
-  db: ScopedDb,
+  db: DraftDb,
   invoice: DraftSource,
 ): Promise<ComputedDraft> {
   // Selections are re-checked against *current* project state: a selection

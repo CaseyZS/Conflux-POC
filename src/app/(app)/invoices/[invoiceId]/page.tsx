@@ -9,6 +9,10 @@ import { SelectionEditor } from "@/features/invoices/selection-editor";
 import { ManualLineDialog } from "@/features/invoices/manual-line-dialog";
 import { DeleteDraftButton } from "@/features/invoices/delete-draft-button";
 import {
+  FinalizeButton,
+  MarkPaidButton,
+} from "@/features/invoices/lifecycle-buttons";
+import {
   Table,
   TableBody,
   TableCell,
@@ -48,7 +52,17 @@ export default async function InvoicePage({
           </h1>
           <InvoiceStatusBadge status={invoice.status} />
         </div>
-        {draft && <DeleteDraftButton invoiceId={invoice.id} />}
+        <div className="flex items-center gap-2">
+          {draft && (
+            <>
+              <DeleteDraftButton invoiceId={invoice.id} />
+              <FinalizeButton invoiceId={invoice.id} />
+            </>
+          )}
+          {invoice.status === "sent" && (
+            <MarkPaidButton invoiceId={invoice.id} />
+          )}
+        </div>
       </div>
 
       <div className="mt-6 grid gap-4 rounded-lg border p-4 sm:grid-cols-3">

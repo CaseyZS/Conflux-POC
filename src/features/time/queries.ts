@@ -21,6 +21,7 @@ export type TimeEntryRow = {
   taskName: string;
   note: string | null;
   billable: boolean; // the assignment's override over the task default
+  billed: boolean; // on a finalized invoice — locked (anti-double-bill, M4)
   durationSeconds: number;
   hoursLabel: string;
   hoursInput: string; // what the edit form prefills ("1:30" — parse accepts it back)
@@ -52,6 +53,7 @@ export async function listDayEntries(
     taskName: entry.projectTask.task.name,
     note: entry.note,
     billable: entry.projectTask.billable,
+    billed: entry.invoiceId !== null,
     durationSeconds: entry.durationSeconds,
     hoursLabel: formatDuration(entry.durationSeconds),
     hoursInput: formatDuration(entry.durationSeconds),
