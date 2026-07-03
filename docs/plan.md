@@ -13,7 +13,7 @@ Updated as milestones land; this is the table that persists build state across s
 | M2 | Projects & tasks: project CRUD with billing type/method, global task list, project↔task assignment | ✅ Done (2026-07-02) |
 | M3 | Time tracking: live timer + manual entry, day + weekly views, single-timer policy | ✅ Done (2026-07-03) |
 | M4 | Invoicing lifecycle: draft from time / fixed fee / manual lines, grouping, finalize→snapshot, mark-as-paid | ✅ Done (2026-07-03) |
-| M5 | Invoice output & demo polish: on-screen + PDF from one component (G9), branding, full demo seed + walkthrough | 🔨 In progress (2026-07-03) |
+| M5 | Invoice output & demo polish: on-screen + PDF from one component (G9), branding, full demo seed + walkthrough | ✅ Done (2026-07-03) |
 
 ## Milestones at a glance
 
