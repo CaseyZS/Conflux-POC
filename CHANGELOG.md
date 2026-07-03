@@ -28,3 +28,4 @@ All notable user-facing changes to Conflux. Format follows [Keep a Changelog](ht
 - Time: entries that are on an invoice show as Billed and can no longer be edited, deleted, or resumed (the weekly grid already showed them locked).
 - Demo data: a paid invoice INV-0001 over a finished "Brand Refresh" project, and an open draft over the demo week's unbilled time with a manual line, tax, and PO number.
 - Invoices: a finalized invoice now renders as a polished, print-ready document — company header, bill-to, an itemized table, totals, and a Paid/Sent stamp — instead of the working editor's layout (drafts keep the editor).
+- Invoices: a "Download PDF" button on finalized invoices produces a paper-ready A4 PDF of that same document.

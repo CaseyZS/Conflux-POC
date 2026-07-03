@@ -35,8 +35,8 @@ The single source of "where we are and what's next," so any session can resume w
 **M5 — Invoice output & demo polish** on `feature/m5-invoice-output` (off `develop`). Segment plan:
 
 - [x] **Seg 0 — Open the milestone.** Plan progress + status + this segment checklist; M4 merged into `develop` (plus the `derive.ts` NUL→`\x00` hotfix).
-- [ ] **Seg 1 — Invoice document.** One styled `InvoiceDocument` component; the finalized invoice renders through it on screen (the polished view) with print CSS tuned. Drafts keep the working editor.
-- [ ] **Seg 2 — PDF output (G9).** Playwright headless Chromium prints the same document to PDF; a "Download PDF" action on finalized invoices.
+- [x] **Seg 1 — Invoice document.** One styled `InvoiceDocument` component; the finalized invoice renders through it on screen (the polished view) with print CSS tuned. Drafts keep the working editor.
+- [x] **Seg 2 — PDF output (G9).** Playwright headless Chromium prints the same document to PDF; a "Download PDF" action on finalized invoices. `lib/pdf.ts` seam owns the browser; a bare `/print/[id]` route (shell-free, outside `(app)`) is the print surface; `/invoices/[id]/pdf` forwards the session cookie so Chromium loads it as the same user.
 - [ ] **Seg 3 — Org settings + branding.** The `lib/assets.ts` seam; a `/settings` page (business name, from block, currency/tax/terms defaults, invoice prefix + next number, footer, logo upload → `Asset`) behind the org-settings capability — the branding finalize snapshots.
 - [ ] **Seg 4 — Time display format.** Org default H:MM vs decimal wired through the existing `duration.ts` seam to the time views.
 - [ ] **Seg 5 — Dashboard + polish.** A post-login dashboard/landing; empty / loading / error states over the demo path; a theming pass.
