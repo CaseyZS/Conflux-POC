@@ -11,7 +11,10 @@ import type { InvoiceView } from "./queries";
 
 // A "PAID" / "SENT" wordmark by the number — useful on a printed copy, and it
 // costs nothing to carry into the PDF.
-const STATUS_STAMP: Record<InvoiceView["status"], { label: string; className: string } | null> = {
+const STATUS_STAMP: Record<
+  InvoiceView["status"],
+  { label: string; className: string } | null
+> = {
   draft: null, // the document view is never shown for a draft
   sent: { label: "SENT", className: "text-sky-600 ring-sky-600/30" },
   paid: { label: "PAID", className: "text-emerald-600 ring-emerald-600/30" },
@@ -78,7 +81,7 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceView }) {
           </div>
           <div className="flex justify-between gap-6">
             <dt className="text-zinc-500">Terms</dt>
-            <dd>{invoice.paymentTermsDays} days</dd>
+            <dd>{invoice.paymentTermsLabel}</dd>
           </div>
           {invoice.poNumber && (
             <div className="flex justify-between gap-6">
@@ -93,31 +96,40 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceView }) {
         </dl>
       </section>
 
-      {/* Line items. */}
-      <table className="mt-8 w-full text-sm">
-        <thead>
-          <tr className="border-b border-zinc-300 text-left text-xs uppercase tracking-wide text-zinc-500">
-            <th className="py-2 font-medium">Description</th>
-            <th className="w-20 py-2 text-right font-medium">Qty</th>
-            <th className="w-28 py-2 text-right font-medium">Rate</th>
-            <th className="w-28 py-2 text-right font-medium">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {invoice.lines.map((line) => (
-            <tr key={line.key} className="border-b border-zinc-100">
-              <td className="py-2 pr-4">{line.description}</td>
-              <td className="py-2 text-right tabular-nums">
-                {line.quantityLabel}
-              </td>
-              <td className="py-2 text-right tabular-nums">{line.rateLabel}</td>
-              <td className="py-2 text-right tabular-nums">
-                {line.amountLabel}
-              </td>
+      {/* Subject line (optional) sits directly above the line items. */}
+      <div className="mt-8">
+        {invoice.subject && (
+          <p className="mb-3 text-sm">
+            <span className="font-semibold">Subject:</span> {invoice.subject}
+          </p>
+        )}
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-zinc-300 text-left text-xs uppercase tracking-wide text-zinc-500">
+              <th className="py-2 font-medium">Description</th>
+              <th className="w-20 py-2 text-right font-medium">Qty</th>
+              <th className="w-28 py-2 text-right font-medium">Rate</th>
+              <th className="w-28 py-2 text-right font-medium">Amount</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {invoice.lines.map((line) => (
+              <tr key={line.key} className="border-b border-zinc-100">
+                <td className="py-2 pr-4">{line.description}</td>
+                <td className="py-2 text-right tabular-nums">
+                  {line.quantityLabel}
+                </td>
+                <td className="py-2 text-right tabular-nums">
+                  {line.rateLabel}
+                </td>
+                <td className="py-2 text-right tabular-nums">
+                  {line.amountLabel}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* Totals, aligned under the Amount column. */}
       <div className="mt-4 flex justify-end">

@@ -111,7 +111,10 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
           <legend className="text-sm font-medium">Line detail</legend>
           <div className="flex flex-wrap gap-x-4 gap-y-2 pt-1">
             {TOGGLES.map((t) => (
-              <Label key={t.name} className="flex items-center gap-2 font-normal">
+              <Label
+                key={t.name}
+                className="flex items-center gap-2 font-normal"
+              >
                 <Checkbox
                   checked={toggles.has(t.name)}
                   onCheckedChange={(on) => toggle(t.name, on === true)}
@@ -240,6 +243,16 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
         </div>
       </div>
 
+      <div className="grid gap-2">
+        <Label htmlFor="invoice-subject">Subject</Label>
+        <Input
+          id="invoice-subject"
+          name="subject"
+          defaultValue={invoice.subject ?? ""}
+          placeholder="Shown above the line items (e.g. Website redesign — June 2026)"
+        />
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="invoice-po">PO number</Label>
@@ -264,9 +277,7 @@ export function DraftSettingsForm({ invoice }: { invoice: InvoiceView }) {
 
       <div className="flex items-center gap-3">
         <SubmitButton pendingText="Saving…">Save settings</SubmitButton>
-        {saved && (
-          <span className="text-sm text-muted-foreground">Saved.</span>
-        )}
+        {saved && <span className="text-sm text-muted-foreground">Saved.</span>}
       </div>
     </form>
   );

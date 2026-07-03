@@ -134,7 +134,7 @@ function DraftWorkspace({
             </div>
             <div className="flex justify-between gap-2">
               <dt className="text-muted-foreground">Terms</dt>
-              <dd>{invoice.paymentTermsDays} days</dd>
+              <dd>{invoice.paymentTermsLabel}</dd>
             </div>
             {invoice.poNumber && (
               <div className="flex justify-between gap-2">
@@ -163,11 +163,18 @@ function DraftWorkspace({
           />
         </div>
 
+        {invoice.subject && (
+          <p className="mt-2 text-sm">
+            <span className="font-medium">Subject:</span>{" "}
+            <span className="text-muted-foreground">{invoice.subject}</span>
+          </p>
+        )}
+
         {invoice.lines.length === 0 ? (
           <div className="mt-4 rounded-lg border border-dashed p-8 text-center">
             <p className="text-sm text-muted-foreground">
-              Nothing to bill yet — select projects with unbilled time below,
-              or add a manual line.
+              Nothing to bill yet — select projects with unbilled time below, or
+              add a manual line.
             </p>
           </div>
         ) : (
@@ -232,7 +239,9 @@ function DraftWorkspace({
           )}
           {invoice.taxSummary && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{invoice.taxSummary}</span>
+              <span className="text-muted-foreground">
+                {invoice.taxSummary}
+              </span>
               <span className="tabular-nums">{invoice.taxLabel}</span>
             </div>
           )}
@@ -246,8 +255,8 @@ function DraftWorkspace({
       <section className="mt-8 rounded-lg border p-4">
         <h2 className="text-lg font-medium">Invoice settings</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Grouping and detail change how the time lines above present — the
-          same entries, itemized differently.
+          Grouping and detail change how the time lines above present — the same
+          entries, itemized differently.
         </p>
         <div className="mt-4">
           <DraftSettingsForm invoice={invoice} />

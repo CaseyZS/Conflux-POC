@@ -96,6 +96,12 @@ export function formatMonthDay(day: string): string {
   }).format(toUtcDate(day));
 }
 
+// "2026/06/03" — the invoice line-item date format: ISO order, slashes. The
+// stored day is already "YYYY-MM-DD", so this is a pure separator swap.
+export function formatDaySlashes(day: string): string {
+  return day.replace(/-/g, "/");
+}
+
 // "June 29 – July 5, 2026" — the weekly view's heading. formatRange collapses
 // the shared parts, so month- and year-spanning weeks come out right
 // ("December 29, 2025 – January 4, 2026") without any casework here.

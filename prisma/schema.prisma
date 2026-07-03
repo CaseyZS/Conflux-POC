@@ -245,6 +245,7 @@ model Invoice {
   issueDate          String? // "YYYY-MM-DD"
   dueDate            String? // null on draft = derive issueDate + terms at display; resolved + frozen at finalize (user-overridable)
   paymentTermsDays   Int // pre-filled from org default at creation, then owned here
+  subject            String? // free-text subject line shown above the line items
   poNumber           String?
   discountPercentBps Int? // XOR discountFlatMinor (app-validated)
   discountFlatMinor  Int?

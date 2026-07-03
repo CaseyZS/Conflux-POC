@@ -59,7 +59,9 @@ export async function createInvoice(
 
   const projectIds = [
     ...new Set(
-      formData.getAll("projects").filter((v): v is string => typeof v === "string"),
+      formData
+        .getAll("projects")
+        .filter((v): v is string => typeof v === "string"),
     ),
   ];
   const projects = await db.project.findMany({
@@ -123,8 +125,7 @@ export async function createInvoice(
 // --- Draft settings (grouping, toggles, dates, discount, tax, PO, footer) ---
 
 export type SaveDraftSettingsResult =
-  | { status: "success" }
-  | { status: "error"; errors: DraftSettingsFieldErrors };
+  { status: "success" } | { status: "error"; errors: DraftSettingsFieldErrors };
 
 export async function updateDraftSettings(
   invoiceId: string,
@@ -144,6 +145,7 @@ export async function updateDraftSettings(
       issueDate: formData.get("issueDate"),
       dueDate: formData.get("dueDate"),
       paymentTermsDays: formData.get("paymentTermsDays"),
+      subject: formData.get("subject"),
       poNumber: formData.get("poNumber"),
       discountKind: formData.get("discountKind"),
       discountValue: formData.get("discountValue"),
@@ -172,7 +174,9 @@ export async function updateProjectSelections(
 
   const projectIds = [
     ...new Set(
-      formData.getAll("projects").filter((v): v is string => typeof v === "string"),
+      formData
+        .getAll("projects")
+        .filter((v): v is string => typeof v === "string"),
     ),
   ];
   const projects = await db.project.findMany({
@@ -213,8 +217,7 @@ export async function updateProjectSelections(
 // --- Manual lines (exist as rows from the draft on; source = "manual") ---
 
 export type SaveManualLineResult =
-  | { status: "success" }
-  | { status: "error"; errors: ManualLineFieldErrors };
+  { status: "success" } | { status: "error"; errors: ManualLineFieldErrors };
 
 async function validateAttribution(
   db: ScopedDb,
@@ -246,7 +249,9 @@ export async function addManualLine(
     invoice.client.currency,
   );
   if (!parsed.ok) return { status: "error", errors: parsed.errors };
-  if (!(await validateAttribution(db, invoice.clientId, parsed.data.projectId))) {
+  if (
+    !(await validateAttribution(db, invoice.clientId, parsed.data.projectId))
+  ) {
     return {
       status: "error",
       errors: { description: "That project doesn't belong to this client." },
@@ -301,7 +306,9 @@ export async function updateManualLine(
     invoice.client.currency,
   );
   if (!parsed.ok) return { status: "error", errors: parsed.errors };
-  if (!(await validateAttribution(db, invoice.clientId, parsed.data.projectId))) {
+  if (
+    !(await validateAttribution(db, invoice.clientId, parsed.data.projectId))
+  ) {
     return {
       status: "error",
       errors: { description: "That project doesn't belong to this client." },

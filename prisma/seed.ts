@@ -542,6 +542,7 @@ async function main() {
       organizationId: org.id,
       clientId: SEED_CLIENTS[0].id, // Acme
       paymentTermsDays: org.defaultPaymentTermsDays,
+      subject: "Brand Refresh — identity & guidelines",
     },
   });
   await db.invoiceProject.upsert({
@@ -584,6 +585,8 @@ async function main() {
       paymentTermsDays: org.defaultPaymentTermsDays,
       taxRateBps: 825, // 8.25%
       poNumber: "PO-2026-117",
+      subject: "Q2 development — Website & Mobile App",
+      showDate: true, // showcase the date-first line format
     },
   });
   for (const projectId of [SEED_PROJECTS[0].id, SEED_PROJECTS[1].id]) {

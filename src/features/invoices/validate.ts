@@ -56,6 +56,12 @@ export function formatBpsPercent(bps: number): string {
   return fraction ? `${whole}.${fraction}` : `${whole}`;
 }
 
+// Payment terms as standard net-terms language: 30 → "NET30", 0 (or less) →
+// "Due on receipt". This is the label the invoice shows instead of "30 days".
+export function formatPaymentTerms(days: number): string {
+  return days <= 0 ? "Due on receipt" : `NET${days}`;
+}
+
 // --- Draft settings (everything editable on a draft besides lines) ---
 
 export type DraftSettingsInput = {
@@ -67,6 +73,7 @@ export type DraftSettingsInput = {
   issueDate: string | null; // null = "today" derived at display/finalize
   dueDate: string | null; // null = derive issueDate + terms
   paymentTermsDays: number;
+  subject: string | null;
   poNumber: string | null;
   discountPercentBps: number | null; // XOR discountFlatMinor
   discountFlatMinor: number | null;
@@ -158,6 +165,7 @@ export function parseDraftSettings(
       issueDate,
       dueDate,
       paymentTermsDays,
+      subject: emptyToNull(asTrimmedString(raw.subject)),
       poNumber: emptyToNull(asTrimmedString(raw.poNumber)),
       discountPercentBps,
       discountFlatMinor,
@@ -206,7 +214,10 @@ export function parseManualLine(
     quantityMilli = Number(whole) * 1000 + Number(fraction.padEnd(3, "0") || 0);
   }
 
-  const unitRateMinor = parseMoneyToMinor(asTrimmedString(raw.unitRate), currency);
+  const unitRateMinor = parseMoneyToMinor(
+    asTrimmedString(raw.unitRate),
+    currency,
+  );
   if (unitRateMinor === null) {
     errors.unitRate = "Enter a plain amount (like 150 or 99.50).";
   }

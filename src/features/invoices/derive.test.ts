@@ -201,7 +201,7 @@ describe("deriveTimeLines — detail toggles", () => {
     fact({ date: "2026-07-01", note: "Wireframes", durationSeconds: 3600 }),
   ];
 
-  it("adds a date range, person, and notes to a grouped line", () => {
+  it("leads with the date range (YYYY/MM/DD), then person and notes", () => {
     const lines = deriveTimeLines(entries, "task", {
       showDate: true,
       showPerson: true,
@@ -210,16 +210,35 @@ describe("deriveTimeLines — detail toggles", () => {
     });
     expect(lines).toHaveLength(1);
     expect(lines[0].description).toBe(
-      "Development — Kickoff; Wireframes · Jun 29 – Jul 1 · Demo Admin",
+      "2026/06/29 – 2026/07/01 — Development · Kickoff; Wireframes · Demo Admin",
     );
   });
 
-  it("shows a single date without a range dash", () => {
+  it("leads with a single date, no range dash", () => {
     const lines = deriveTimeLines([entries[0]], "task", {
       ...OFF,
       showDate: true,
     });
-    expect(lines[0].description).toBe("Development — Jun 29");
+    expect(lines[0].description).toBe("2026/06/29 — Development");
+  });
+
+  it("leads each detailed line with its own date", () => {
+    const lines = deriveTimeLines(
+      [
+        fact({
+          date: "2026-06-29",
+          note: "Home page layout",
+          taskName: "Design",
+        }),
+        fact({ date: "2026-07-02", note: null, taskName: "Development" }),
+      ],
+      "detailed",
+      { ...OFF, showDate: true },
+    );
+    expect(lines.map((l) => l.description)).toEqual([
+      "2026/06/29 — Design · Home page layout",
+      "2026/07/02 — Development",
+    ]);
   });
 
   it("skips the person part when person is the grouping", () => {

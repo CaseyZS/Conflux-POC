@@ -6,7 +6,7 @@
 // way money.ts is.
 
 import { divRoundHalfUp, lineAmountMinor } from "@/lib/money";
-import { formatMonthDay } from "@/lib/dates";
+import { formatDaySlashes } from "@/lib/dates";
 import type { InvoiceGrouping } from "./validate";
 
 // One unbilled billable time entry, with its rate already resolved (D6:
@@ -146,7 +146,12 @@ function summaryLines(
   entries: PoolEntryFact[],
   toggles: DetailToggles,
 ): DerivedLine[] {
-  const description = describe("Services rendered", entries, "summary", toggles);
+  const description = describe(
+    "Services rendered",
+    entries,
+    "summary",
+    toggles,
+  );
   const rates = distinct(entries.map((e) => e.rateMinor));
   if (rates.length === 1) {
     const quantityMilli = secondsToMilliHours(
@@ -169,14 +174,20 @@ function summaryLines(
     amountMinor += lineAmountMinor(secondsToMilliHours(seconds), rate);
   }
   return [
-    { description, quantityMilli: 1000, unitRateMinor: amountMinor, amountMinor },
+    {
+      description,
+      quantityMilli: 1000,
+      unitRateMinor: amountMinor,
+      amountMinor,
+    },
   ];
 }
 
-// The description: the grouping's lead, then the toggled detail parts —
-// derived from the same entries, never stored (the snapshot captures the
-// final string at finalize). Parts a grouping already shows are skipped, so
-// toggles annotate instead of stutter.
+// The description: when a date is shown it LEADS the line (YYYY/MM/DD), then
+// the grouping's lead and the toggled detail parts — all derived from the same
+// entries, never stored (the snapshot captures the final string at finalize).
+// Parts a grouping already shows are skipped, so toggles annotate instead of
+// stutter.
 function describe(
   lead: string,
   entries: PoolEntryFact[],
@@ -189,17 +200,8 @@ function describe(
     const note = entries[0].note;
     if (note) parts.push(note);
   } else if (toggles.showNote) {
-    const notes = distinct(
-      entries.flatMap((e) => (e.note ? [e.note] : [])),
-    );
+    const notes = distinct(entries.flatMap((e) => (e.note ? [e.note] : [])));
     if (notes.length > 0) parts.push(notes.join("; "));
-  }
-
-  if (toggles.showDate) {
-    const dates = distinct(entries.map((e) => e.date)).sort();
-    const first = formatMonthDay(dates[0]);
-    const last = formatMonthDay(dates[dates.length - 1]);
-    parts.push(dates.length === 1 ? first : `${first} – ${last}`);
   }
 
   if (toggles.showPerson && grouping !== "person") {
@@ -210,6 +212,17 @@ function describe(
     grouping === "task" || grouping === "detailed" || lead.includes("(");
   if (toggles.showTask && !taskAlreadyShown) {
     parts.push(distinct(entries.map((e) => e.taskName)).join(", "));
+  }
+
+  // Date first when shown: the date is the leading element, then the lead and
+  // any other parts follow. A single day prints once; a spanning group prints
+  // its first–last range, both in YYYY/MM/DD.
+  if (toggles.showDate) {
+    const dates = distinct(entries.map((e) => e.date)).sort();
+    const first = formatDaySlashes(dates[0]);
+    const last = formatDaySlashes(dates[dates.length - 1]);
+    const dateLabel = dates.length === 1 ? first : `${first} – ${last}`;
+    return `${dateLabel} — ${[lead, ...parts].join(" · ")}`;
   }
 
   return parts.length > 0 ? `${lead} — ${parts.join(" · ")}` : lead;

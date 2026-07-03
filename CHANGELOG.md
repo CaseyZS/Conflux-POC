@@ -29,3 +29,6 @@ All notable user-facing changes to Conflux. Format follows [Keep a Changelog](ht
 - Demo data: a paid invoice INV-0001 over a finished "Brand Refresh" project, and an open draft over the demo week's unbilled time with a manual line, tax, and PO number.
 - Invoices: a finalized invoice now renders as a polished, print-ready document — company header, bill-to, an itemized table, totals, and a Paid/Sent stamp — instead of the working editor's layout (drafts keep the editor).
 - Invoices: a "Download PDF" button on finalized invoices produces a paper-ready A4 PDF of that same document.
+- Invoices: an optional subject line, shown just above the line-items table (set in the draft's settings).
+- Invoices: payment terms display in standard net-terms language ("NET30", or "Due on receipt" for zero-day terms) instead of "30 days".
+- Invoices: when a line item shows its date, the date now leads the line in YYYY/MM/DD format.
