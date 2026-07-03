@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   addDays,
   formatDayHeading,
+  formatMonthDay,
+  formatWeekday,
+  formatWeekHeading,
   isIsoDate,
   localDayOf,
   todayLocal,
@@ -107,5 +110,32 @@ describe("formatDayHeading", () => {
   it("formats the en-US long heading", () => {
     expect(formatDayHeading("2026-07-02")).toBe("Thursday, July 2, 2026");
     expect(formatDayHeading("2026-01-01")).toBe("Thursday, January 1, 2026");
+  });
+});
+
+describe("weekly grid labels", () => {
+  it("formats the column labels", () => {
+    expect(formatWeekday("2026-06-29")).toBe("Mon");
+    expect(formatWeekday("2026-07-05")).toBe("Sun");
+    expect(formatMonthDay("2026-06-29")).toBe("Jun 29");
+    expect(formatMonthDay("2026-07-05")).toBe("Jul 5");
+  });
+
+  // ICU range separators vary between plain and thin spaces across versions,
+  // so assertions normalize all whitespace before comparing.
+  const normalized = (first: string, last: string) =>
+    formatWeekHeading(first, last).replace(/\s/g, " ");
+
+  it("collapses the shared parts of a week heading", () => {
+    expect(normalized("2026-06-29", "2026-07-05")).toBe(
+      "June 29 – July 5, 2026",
+    );
+    expect(normalized("2026-07-06", "2026-07-12")).toBe("July 6 – 12, 2026");
+  });
+
+  it("spells out a year-spanning week", () => {
+    expect(normalized("2025-12-29", "2026-01-04")).toBe(
+      "December 29, 2025 – January 4, 2026",
+    );
   });
 });

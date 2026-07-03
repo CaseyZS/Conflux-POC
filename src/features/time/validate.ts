@@ -11,8 +11,9 @@ import { isIsoDate } from "@/lib/dates";
 import { parseDurationToSeconds } from "./duration";
 
 // One manual entry tops out at a day: entries are per-calendar-day (D11), so
-// more than 24h on one row is a typo, not a long day.
-const MAX_ENTRY_SECONDS = 24 * 3600;
+// more than 24h on one row is a typo, not a long day. (Exported for the
+// weekly grid's cell action, which validates outside this parser.)
+export const MAX_ENTRY_SECONDS = 24 * 3600;
 
 export type TimeEntryInput = {
   date: string;

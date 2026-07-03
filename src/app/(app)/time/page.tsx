@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireActor } from "@/lib/auth";
 import { addDays, formatDayHeading, isIsoDate, todayLocal } from "@/lib/dates";
 import { TimeEntryDialog } from "@/features/time/entry-dialog";
+import { TimesheetTabs } from "@/features/time/view-tabs";
 import {
   LiveDuration,
   ResumeDialog,
@@ -54,24 +55,31 @@ export default async function TimePage({
     <div className="mx-auto max-w-4xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Time</h1>
-        <nav className="flex items-center gap-1">
-          <Link
-            href={`/time?date=${addDays(date, -1)}`}
-            aria-label="Previous day"
-            className={navLinkClass}
-          >
-            ←
-          </Link>
-          <Link
-            href={`/time?date=${addDays(date, 1)}`}
-            aria-label="Next day"
-            className={navLinkClass}
-          >
-            →
-          </Link>
-          <Link href="/time" className={navLinkClass}>
-            Today
-          </Link>
+        <nav className="flex items-center gap-3">
+          <TimesheetTabs
+            active="day"
+            dayHref={`/time?date=${date}`}
+            weekHref={`/time/week?date=${date}`}
+          />
+          <div className="flex items-center gap-1">
+            <Link
+              href={`/time?date=${addDays(date, -1)}`}
+              aria-label="Previous day"
+              className={navLinkClass}
+            >
+              ←
+            </Link>
+            <Link
+              href={`/time?date=${addDays(date, 1)}`}
+              aria-label="Next day"
+              className={navLinkClass}
+            >
+              →
+            </Link>
+            <Link href="/time" className={navLinkClass}>
+              Today
+            </Link>
+          </div>
         </nav>
       </div>
 

@@ -102,6 +102,92 @@ export async function findRunningEntry(
   };
 }
 
+// --- The weekly grid (one row per assignment, one cell per day) ---
+
+// A cell aggregates the day's entries for one assignment. The grid edits a
+// cell only when that's unambiguous: exactly one entry that is neither
+// running nor billed — or no entry yet (a create). Anything else renders
+// read-only and defers to the day view, where entries are individual rows.
+export type WeekCell = {
+  date: string;
+  totalSeconds: number;
+  entryCount: number;
+  running: boolean;
+  startedAtMs: number | null; // the running entry's start, for the live tick
+  billed: boolean; // some entry is on an invoice — locked (anti-double-bill)
+};
+
+export type WeekRow = {
+  projectTaskId: string;
+  clientName: string;
+  projectName: string;
+  taskName: string;
+  // Same liveness rule as the picker: false means the assignment (or its
+  // project/client/task) has been retired — existing cells stay editable
+  // (history, G12), but empty cells can't take new time.
+  assignmentLive: boolean;
+  cells: WeekCell[]; // aligned index-for-index with the week's days
+};
+
+const emptyCell = (date: string): WeekCell => ({
+  date,
+  totalSeconds: 0,
+  entryCount: 0,
+  running: false,
+  startedAtMs: null,
+  billed: false,
+});
+
+export async function getWeekRows(
+  actor: Actor,
+  days: string[],
+): Promise<WeekRow[]> {
+  const entries = await scopedDb(actor.organizationId).timeEntry.findMany({
+    where: { membershipId: actor.membershipId, date: { in: days } },
+    include: {
+      projectTask: {
+        include: { task: true, project: { include: { client: true } } },
+      },
+    },
+  });
+
+  const rows = new Map<string, WeekRow>();
+  for (const entry of entries) {
+    let row = rows.get(entry.projectTaskId);
+    if (!row) {
+      const assignment = entry.projectTask;
+      row = {
+        projectTaskId: entry.projectTaskId,
+        clientName: assignment.project.client.name,
+        projectName: assignment.project.name,
+        taskName: assignment.task.name,
+        assignmentLive:
+          assignment.active &&
+          assignment.project.archivedAt === null &&
+          assignment.project.client.archivedAt === null &&
+          assignment.task.archivedAt === null,
+        cells: days.map(emptyCell),
+      };
+      rows.set(entry.projectTaskId, row);
+    }
+    const cell = row.cells[days.indexOf(entry.date)];
+    cell.totalSeconds += entry.durationSeconds;
+    cell.entryCount += 1;
+    if (entry.startedAt !== null) {
+      cell.running = true;
+      cell.startedAtMs = entry.startedAt.getTime();
+    }
+    if (entry.invoiceId !== null) cell.billed = true;
+  }
+
+  return [...rows.values()].sort(
+    (a, b) =>
+      a.clientName.localeCompare(b.clientName) ||
+      a.projectName.localeCompare(b.projectName) ||
+      a.taskName.localeCompare(b.taskName),
+  );
+}
+
 // --- The project → task picker ---
 
 export type AssignmentOption = {

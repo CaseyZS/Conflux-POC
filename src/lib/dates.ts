@@ -78,3 +78,32 @@ export function formatDayHeading(day: string): string {
     timeZone: "UTC",
   }).format(toUtcDate(day));
 }
+
+// "Mon" / "Jun 29" — the weekly grid's column labels, split so the grid can
+// stack them. Same en-US + UTC conventions as formatDayHeading.
+export function formatWeekday(day: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    timeZone: "UTC",
+  }).format(toUtcDate(day));
+}
+
+export function formatMonthDay(day: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(toUtcDate(day));
+}
+
+// "June 29 – July 5, 2026" — the weekly view's heading. formatRange collapses
+// the shared parts, so month- and year-spanning weeks come out right
+// ("December 29, 2025 – January 4, 2026") without any casework here.
+export function formatWeekHeading(first: string, last: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).formatRange(toUtcDate(first), toUtcDate(last));
+}

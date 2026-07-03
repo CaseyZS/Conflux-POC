@@ -4,9 +4,13 @@ import { revalidatePath } from "next/cache";
 import { requireActor } from "@/lib/auth";
 import { requireCapability } from "@/lib/authz";
 import { scopedDb } from "@/lib/scope";
-import { localDayOf } from "@/lib/dates";
-import { elapsedSeconds } from "./duration";
-import { parseTimeEntryInput, type TimeEntryFieldErrors } from "./validate";
+import { isIsoDate, localDayOf, todayLocal } from "@/lib/dates";
+import { elapsedSeconds, parseDurationToSeconds } from "./duration";
+import {
+  MAX_ENTRY_SECONDS,
+  parseTimeEntryInput,
+  type TimeEntryFieldErrors,
+} from "./validate";
 
 export type SaveTimeEntryResult =
   | { status: "success" }
@@ -176,6 +180,121 @@ export async function deleteTimeEntry(entryId: string): Promise<void> {
   await db.timeEntry.delete({ where: { id: entryId } });
 
   revalidatePath("/time");
+}
+
+// --- The weekly grid ---
+
+// One cell = one assignment's total for one day, so the result speaks in one
+// message, not per-field errors. "confirm-future" is the grid's form of the
+// warn-and-acknowledge rule: the cell re-submits with the acknowledgment
+// instead of showing a checkbox.
+export type WeekCellResult =
+  | { status: "success" }
+  | { status: "confirm-future" }
+  | { status: "error"; message: string };
+
+// Write a day's total for an assignment from the weekly grid. Unambiguous
+// cases only: no entry yet → create (liveness-checked, like any new booking);
+// exactly one clean entry → update its duration, or delete it when the cell
+// is cleared (empty or zero — a cleared cell means "no time that day", the
+// Harvest convention). A cell holding several entries, a running timer, or
+// billed time refuses and points at the day view; the grid renders those
+// read-only, this is the server backstop.
+export async function saveWeekCell(
+  formData: FormData,
+): Promise<WeekCellResult> {
+  const actor = requireCapability(await requireActor(), "time.track");
+  const db = scopedDb(actor.organizationId);
+
+  const dateRaw = formData.get("date");
+  const date = typeof dateRaw === "string" ? dateRaw : "";
+  if (!isIsoDate(date)) return { status: "error", message: "Not a valid day." };
+  const projectTaskIdRaw = formData.get("projectTaskId");
+  const projectTaskId =
+    typeof projectTaskIdRaw === "string" ? projectTaskIdRaw : "";
+
+  const hoursRaw = formData.get("hours");
+  const hours = typeof hoursRaw === "string" ? hoursRaw.trim() : "";
+  let seconds = 0;
+  if (hours !== "") {
+    const parsed = parseDurationToSeconds(hours);
+    if (parsed === null) {
+      return { status: "error", message: "Enter time like 1:30 or 1.5." };
+    }
+    if (parsed > MAX_ENTRY_SECONDS) {
+      return {
+        status: "error",
+        message: "One entry can't be more than 24 hours.",
+      };
+    }
+    seconds = parsed;
+  }
+
+  if (
+    seconds > 0 &&
+    date > todayLocal() && // ISO day strings compare chronologically (D11)
+    formData.get("acknowledgeFuture") !== "true"
+  ) {
+    return { status: "confirm-future" };
+  }
+
+  const entries = await db.timeEntry.findMany({
+    where: { membershipId: actor.membershipId, projectTaskId, date },
+  });
+  if (entries.some((entry) => entry.startedAt !== null)) {
+    return {
+      status: "error",
+      message: "A timer is running here — stop it first.",
+    };
+  }
+  if (entries.some((entry) => entry.invoiceId !== null)) {
+    return {
+      status: "error",
+      message: "This day's time is on an invoice and can't be changed.",
+    };
+  }
+  if (entries.length > 1) {
+    return {
+      status: "error",
+      message: "Several entries share this day — edit them in the day view.",
+    };
+  }
+
+  if (entries.length === 1) {
+    // Editing existing time stays legal even on a retired assignment (G12),
+    // same as updateTimeEntry keeping an entry where it is.
+    if (seconds === 0) {
+      await db.timeEntry.delete({ where: { id: entries[0].id } });
+    } else {
+      await db.timeEntry.update({
+        where: { id: entries[0].id },
+        data: { durationSeconds: seconds },
+      });
+    }
+  } else {
+    if (seconds === 0) return { status: "success" }; // clearing an empty cell
+    const assignment = await findLiveAssignment(db, projectTaskId);
+    if (!assignment) {
+      return {
+        status: "error",
+        message: "This task is retired and can't take new time.",
+      };
+    }
+    await db.timeEntry.create({
+      data: {
+        date,
+        durationSeconds: seconds,
+        note: null,
+        projectTaskId: assignment.id,
+        membershipId: actor.membershipId,
+        organizationId: actor.organizationId,
+      },
+    });
+  }
+
+  revalidatePath("/time");
+  revalidatePath("/time/week");
+  return { status: "success" };
 }
 
 // --- The live timer (D5 / G6) ---
