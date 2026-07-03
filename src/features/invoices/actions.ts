@@ -21,8 +21,9 @@ import {
 export type InvoiceActionResult = { status: "error"; message: string };
 
 // Every mutation below touches drafts only: finalized invoices are immutable
-// (no void/credit path in the POC), so "is it still a draft" is re-checked
-// server-side on each call — a stale editor tab must not edit a sent invoice.
+// (they're corrected by voiding, not editing — see voidInvoice), so "is it
+// still a draft" is re-checked server-side on each call — a stale editor tab
+// must not edit a sent invoice.
 async function findDraft(db: ScopedDb, invoiceId: string) {
   const invoice = await db.invoice.findFirst({
     where: { id: invoiceId },
@@ -421,6 +422,62 @@ export async function markInvoicePaid(invoiceId: string): Promise<void> {
   });
 
   revalidateInvoice(invoiceId);
+}
+
+// Void a finalized invoice (sent or paid) that turns out to be wrong — the
+// correction path, since a finalized invoice can't be edited. The mirror of
+// finalize: the number and snapshot stay on record (marked void, for the audit
+// trail), and the billed time entries + fixed fees are RELEASED back to the
+// unbilled pool so a corrected invoice can bill them again. One transaction so
+// a failure can't half-release the work. No credit-note document in the POC —
+// that's the deferred, full-version path (see requirements/invoicing.md).
+export async function voidInvoice(
+  invoiceId: string,
+): Promise<InvoiceActionResult | { status: "success" }> {
+  const actor = requireCapability(await requireActor(), "invoice.manage");
+  const db = scopedDb(actor.organizationId);
+
+  const result = await db.$transaction(async (tx) => {
+    const invoice = await tx.invoice.findFirst({ where: { id: invoiceId } });
+    if (!invoice) {
+      return { status: "error", message: "Invoice not found." } as const;
+    }
+    if (invoice.status === "draft") {
+      return {
+        status: "error",
+        message: "A draft isn't finalized — delete it instead of voiding.",
+      } as const;
+    }
+    if (invoice.status === "void") {
+      return {
+        status: "error",
+        message: "This invoice is already void.",
+      } as const;
+    }
+
+    // Release the anti-double-bill links so the work returns to the pool.
+    await tx.timeEntry.updateMany({
+      where: { invoiceId },
+      data: { invoiceId: null },
+    });
+    await tx.project.updateMany({
+      where: { fixedFeeInvoiceId: invoiceId },
+      data: { fixedFeeInvoiceId: null },
+    });
+    await tx.invoice.update({
+      where: { id: invoiceId },
+      data: { status: "void" },
+    });
+    return { status: "success" } as const;
+  });
+
+  if (result.status === "error") return result;
+
+  revalidateInvoice(invoiceId);
+  // The released entries are editable/billable again in the timesheet.
+  revalidatePath("/time");
+  revalidatePath("/time/week");
+  return { status: "success" };
 }
 
 // Deleting a draft removes just the draft and its manual lines + selections

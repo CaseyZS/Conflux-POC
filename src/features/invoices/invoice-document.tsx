@@ -19,6 +19,7 @@ const STATUS_STAMP: Record<
   draft: { label: "DRAFT", className: "text-amber-600 ring-amber-600/30" },
   sent: { label: "SENT", className: "text-sky-600 ring-sky-600/30" },
   paid: { label: "PAID", className: "text-emerald-600 ring-emerald-600/30" },
+  void: { label: "VOID", className: "text-rose-600 ring-rose-600/30" },
 };
 
 export function InvoiceDocument({ invoice }: { invoice: InvoiceView }) {

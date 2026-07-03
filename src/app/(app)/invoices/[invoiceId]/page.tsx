@@ -14,6 +14,7 @@ import { PreviewButton } from "@/features/invoices/preview-button";
 import {
   FinalizeButton,
   MarkPaidButton,
+  VoidButton,
 } from "@/features/invoices/lifecycle-buttons";
 import {
   Table,
@@ -63,10 +64,15 @@ export default async function InvoicePage({
               <FinalizeButton invoiceId={invoice.id} />
             </>
           ) : (
-            <DownloadPdfButton invoiceId={invoice.id} />
-          )}
-          {invoice.status === "sent" && (
-            <MarkPaidButton invoiceId={invoice.id} />
+            <>
+              <DownloadPdfButton invoiceId={invoice.id} />
+              {invoice.status === "sent" && (
+                <MarkPaidButton invoiceId={invoice.id} />
+              )}
+              {(invoice.status === "sent" || invoice.status === "paid") && (
+                <VoidButton invoiceId={invoice.id} />
+              )}
+            </>
           )}
         </div>
       </div>
@@ -75,6 +81,13 @@ export default async function InvoicePage({
         <DraftWorkspace invoice={invoice} />
       ) : (
         <div className="mt-6">
+          {invoice.status === "void" && (
+            <p className="mb-4 rounded-md bg-rose-50 px-4 py-3 text-sm text-rose-900">
+              This invoice was voided — the time entries and fixed fees it
+              billed were released back to the unbilled pool. Create a new
+              invoice to bill them correctly.
+            </p>
+          )}
           <InvoiceDocument invoice={invoice} />
         </div>
       )}

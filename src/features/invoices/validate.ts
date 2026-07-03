@@ -6,12 +6,14 @@
 import { isIsoDate } from "@/lib/dates";
 import { parseMoneyToMinor } from "@/lib/money";
 
-export const INVOICE_STATUSES = ["draft", "sent", "paid"] as const;
+export const INVOICE_STATUSES = ["draft", "sent", "paid", "void"] as const;
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 
-// Finalize is the draft→sent transition (assigns the number, snapshots);
-// sent→paid is the mark-as-paid click. No other movement exists — finalized
-// invoices are immutable and there's no void/credit path in the POC.
+// Finalize is the draft→sent transition (freezes the number, snapshots);
+// sent→paid is the mark-as-paid click. A finalized invoice (sent or paid) can
+// be voided when it's wrong — a cancellation that keeps the record but releases
+// the billed work. No credit-note document in the POC (deferred to the full
+// version); void is the correction path.
 export function isInvoiceStatus(value: string): value is InvoiceStatus {
   return (INVOICE_STATUSES as readonly string[]).includes(value);
 }

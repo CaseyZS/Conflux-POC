@@ -42,6 +42,8 @@ The single source of "where we are and what's next," so any session can resume w
 - [ ] **Seg 5 — Dashboard + polish.** A post-login dashboard/landing; empty / loading / error states over the demo path; a theming pass.
 - [ ] **Seg 6 — Full demo seed + `docs/demo.md`.** The complete demo seed and the scripted walkthrough.
 
+Review-driven additions on top of segs 1–2 (all committed on the branch): invoice-document refinements (subject line above the items, "NET30"-style terms, date-first `YYYY/MM/DD` line dates); a draft **Preview** (renders the polished document stamped DRAFT, no finalize); the invoice number **pre-filled + editable on the draft**, frozen at finalize, unique-but-not-gapless (**D15**); and a **Void** correction path for finalized invoices — releases the billed time/fees back to the pool for a corrected invoice (**D16**). Recorded as full-version deferrals: **credit notes** and **emailing the invoice to client contacts at finalize**.
+
 ## Next up (ordered)
 
 1. **M5 segments 1–6** (checklist above) — the styled invoice document + PDF, org settings/branding, the time-format preference, the dashboard/polish pass, and the full demo seed + `docs/demo.md`.
