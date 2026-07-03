@@ -18,6 +18,38 @@ export function minorUnitExponent(currency: string): number {
   return CURRENCY_EXPONENT[currency] ?? 2;
 }
 
+// The inverse of formatMoney for form input: a human decimal string in major
+// units → integer minor units, or null if it isn't a clean non-negative
+// amount for this currency. Digit-string math, not parseFloat, so no float
+// drift can round a price (G4). Thousands commas are tolerated; more decimal
+// places than the currency has is a user error, not something to round away.
+export function parseMoneyToMinor(
+  input: string,
+  currency: string,
+): number | null {
+  const exponent = minorUnitExponent(currency);
+  const cleaned = input.trim().replace(/,/g, "");
+  const match = /^(\d{1,12})(?:\.(\d*))?$/.exec(cleaned);
+  if (!match) return null;
+
+  const [, whole, fraction = ""] = match;
+  if (fraction.length > exponent) return null;
+
+  return (
+    Number(whole) * 10 ** exponent + Number(fraction.padEnd(exponent, "0") || 0)
+  );
+}
+
+// Minor units → the plain decimal string a form input expects ("150.50",
+// no symbol, no grouping). parseMoneyToMinor(formatMoneyInput(x)) === x.
+export function formatMoneyInput(
+  amountMinor: number,
+  currency: string,
+): string {
+  const exponent = minorUnitExponent(currency);
+  return (amountMinor / 10 ** exponent).toFixed(exponent); // display boundary (G4)
+}
+
 // Locale fixed to en-US for the POC so output is deterministic across
 // machines (and tests); a user-locale setting can thread through later.
 export function formatMoney(amountMinor: number, currency: string): string {

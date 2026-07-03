@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireActor } from "@/lib/auth";
 import { scopedDb } from "@/lib/scope";
 import { NewClientDialog } from "@/features/clients/new-client-dialog";
@@ -15,11 +16,12 @@ export default async function ClientsPage() {
   const db = scopedDb(actor.organizationId);
   const [org, clients] = await Promise.all([
     db.organization.findFirst(),
-    db.client.findMany({
-      where: { archivedAt: null },
-      orderBy: { name: "asc" },
-    }),
+    db.client.findMany({ orderBy: { name: "asc" } }),
   ]);
+  // Archived clients leave the working list but stay reachable (G12): they
+  // keep their history and can be unarchived from their detail page.
+  const active = clients.filter((client) => client.archivedAt === null);
+  const archived = clients.filter((client) => client.archivedAt !== null);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -28,9 +30,9 @@ export default async function ClientsPage() {
         <NewClientDialog defaultCurrency={org?.defaultCurrency ?? "USD"} />
       </div>
 
-      {clients.length === 0 ? (
+      {active.length === 0 ? (
         <div className="mt-8 rounded-lg border border-dashed p-8 text-center">
-          <p className="text-sm text-muted-foreground">No clients yet.</p>
+          <p className="text-sm text-muted-foreground">No active clients.</p>
         </div>
       ) : (
         <Table className="mt-6">
@@ -43,9 +45,16 @@ export default async function ClientsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {clients.map((client) => (
+            {active.map((client) => (
               <TableRow key={client.id}>
-                <TableCell className="font-medium">{client.name}</TableCell>
+                <TableCell className="font-medium">
+                  <Link
+                    href={`/clients/${client.id}`}
+                    className="hover:underline"
+                  >
+                    {client.name}
+                  </Link>
+                </TableCell>
                 <TableCell className="text-muted-foreground">
                   {client.contactPerson ?? "—"}
                 </TableCell>
@@ -59,6 +68,26 @@ export default async function ClientsPage() {
             ))}
           </TableBody>
         </Table>
+      )}
+
+      {archived.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-sm font-medium text-muted-foreground">
+            Archived
+          </h2>
+          <ul className="mt-2 space-y-1">
+            {archived.map((client) => (
+              <li key={client.id}>
+                <Link
+                  href={`/clients/${client.id}`}
+                  className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  {client.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

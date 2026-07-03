@@ -1,6 +1,8 @@
 // Seed v0 (M0): one Organization, the admin User + Membership, the three seed
 // roles with their capability rows, Admin granted to the seeded member.
 // Seed v1 (M1): two sample clients with invoice-ready details.
+// Seed v2 (M2): projects covering all three billing types and both wired
+// methods, the global task list, and assignments with mixed billable/rates.
 // Idempotent: everything is upserted on stable keys, so re-running is always
 // safe — each milestone extends this script (seed v1, v2, ...) rather than
 // replacing it. Run via `npm run db:seed` (or `npx prisma db seed`).
@@ -58,6 +60,159 @@ const SEED_CLIENTS = [
     email: "accounts@globex.test",
     billingAddress: "Globex GmbH\nUnter den Linden 5\n10117 Berlin\nGermany",
     currency: "EUR",
+  },
+];
+
+// Seed v2: one project per billing shape the UI wires today — hourly with a
+// project-wide rate, hourly with per-task rates, fixed fee, and non-billable —
+// split across both clients so both currencies show up.
+const SEED_PROJECTS: {
+  id: string;
+  clientId: string;
+  name: string;
+  billingType: string;
+  billingMethod?: string;
+  hourlyRateMinor?: number;
+  fixedFeeMinor?: number;
+}[] = [
+  {
+    id: "00000000-0000-4000-8000-000000000201",
+    clientId: SEED_CLIENTS[0].id, // Acme (USD)
+    name: "Website Redesign",
+    billingType: "hourly",
+    billingMethod: "per_project",
+    hourlyRateMinor: 12500, // $125.00/hr
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000202",
+    clientId: SEED_CLIENTS[0].id, // Acme (USD)
+    name: "Mobile App",
+    billingType: "hourly",
+    billingMethod: "per_task", // rates live on the assignments below
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000203",
+    clientId: SEED_CLIENTS[1].id, // Globex (EUR)
+    name: "ERP Migration",
+    billingType: "fixed_fee",
+    fixedFeeMinor: 1_800_000, // €18,000.00
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000204",
+    clientId: SEED_CLIENTS[1].id, // Globex (EUR)
+    name: "Internal Support",
+    billingType: "non_billable",
+  },
+];
+
+// The org-wide task list; one task defaults to non-billable so the default
+// shows up in the tasks page and in freshly created assignments.
+const SEED_TASKS = [
+  {
+    id: "00000000-0000-4000-8000-000000000301",
+    name: "Development",
+    defaultBillable: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000302",
+    name: "Design",
+    defaultBillable: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000303",
+    name: "Project Management",
+    defaultBillable: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000304",
+    name: "Internal Meeting",
+    defaultBillable: false,
+  },
+];
+
+// Mixed on purpose: per-task rates only where the project prices per task,
+// a billable-default task assigned non-billable (per-assignment override),
+// and one retired assignment so the Retired section has demo data.
+const SEED_ASSIGNMENTS: {
+  id: string;
+  projectId: string;
+  taskId: string;
+  billable: boolean;
+  hourlyRateMinor?: number;
+  active?: boolean;
+}[] = [
+  // Website Redesign (hourly · project rate): the rate is on the project.
+  {
+    id: "00000000-0000-4000-8000-000000000401",
+    projectId: SEED_PROJECTS[0].id,
+    taskId: SEED_TASKS[0].id, // Development
+    billable: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000402",
+    projectId: SEED_PROJECTS[0].id,
+    taskId: SEED_TASKS[1].id, // Design
+    billable: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000403",
+    projectId: SEED_PROJECTS[0].id,
+    taskId: SEED_TASKS[3].id, // Internal Meeting
+    billable: false,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000404",
+    projectId: SEED_PROJECTS[0].id,
+    taskId: SEED_TASKS[2].id, // Project Management — retired, keeps its slot
+    billable: true,
+    active: false,
+  },
+  // Mobile App (hourly · per-task rates): billable rows carry their own rate.
+  {
+    id: "00000000-0000-4000-8000-000000000405",
+    projectId: SEED_PROJECTS[1].id,
+    taskId: SEED_TASKS[0].id, // Development
+    billable: true,
+    hourlyRateMinor: 9500, // $95.00/hr
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000406",
+    projectId: SEED_PROJECTS[1].id,
+    taskId: SEED_TASKS[1].id, // Design
+    billable: true,
+    hourlyRateMinor: 11000, // $110.00/hr
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000407",
+    projectId: SEED_PROJECTS[1].id,
+    taskId: SEED_TASKS[2].id, // Project Management — billable by default, overridden here
+    billable: false,
+  },
+  // ERP Migration (fixed fee): billable marks work covered by the fee; no rates.
+  {
+    id: "00000000-0000-4000-8000-000000000408",
+    projectId: SEED_PROJECTS[2].id,
+    taskId: SEED_TASKS[0].id, // Development
+    billable: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000409",
+    projectId: SEED_PROJECTS[2].id,
+    taskId: SEED_TASKS[2].id, // Project Management
+    billable: true,
+  },
+  // Internal Support (non-billable): nothing here is ever invoiced.
+  {
+    id: "00000000-0000-4000-8000-000000000410",
+    projectId: SEED_PROJECTS[3].id,
+    taskId: SEED_TASKS[0].id, // Development — non-billable here despite its default
+    billable: false,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000411",
+    projectId: SEED_PROJECTS[3].id,
+    taskId: SEED_TASKS[3].id, // Internal Meeting
+    billable: false,
   },
 ];
 
@@ -140,6 +295,38 @@ async function main() {
     });
   }
 
+  for (const project of SEED_PROJECTS) {
+    await db.project.upsert({
+      where: { id: project.id },
+      update: {},
+      create: {
+        ...project,
+        organizationId: org.id,
+        createdById: membership.id,
+      },
+    });
+  }
+
+  for (const task of SEED_TASKS) {
+    await db.task.upsert({
+      where: { id: task.id },
+      update: {},
+      create: {
+        ...task,
+        organizationId: org.id,
+        createdById: membership.id,
+      },
+    });
+  }
+
+  for (const assignment of SEED_ASSIGNMENTS) {
+    await db.projectTask.upsert({
+      where: { id: assignment.id },
+      update: {},
+      create: { ...assignment, organizationId: org.id },
+    });
+  }
+
   const counts = {
     organizations: await db.organization.count(),
     users: await db.user.count(),
@@ -148,8 +335,11 @@ async function main() {
     roleCapabilities: await db.roleCapability.count(),
     membershipRoles: await db.membershipRole.count(),
     clients: await db.client.count(),
+    projects: await db.project.count(),
+    tasks: await db.task.count(),
+    assignments: await db.projectTask.count(),
   };
-  console.log(`Seed v1 complete for "${org.name}" (${ADMIN_EMAIL}):`, counts);
+  console.log(`Seed v2 complete for "${org.name}" (${ADMIN_EMAIL}):`, counts);
 }
 
 main()

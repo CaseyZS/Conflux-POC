@@ -5,9 +5,9 @@ The single source of "where we are and what's next," so any session can resume w
 ## Snapshot
 
 - **Date:** 2026-07-02
-- **Phase:** **M1 — First vertical slice** is **complete** on `feature/m1-vertical-slice`, awaiting human review + merge. M0 merged.
-- **Git:** `develop` holds requirements + plan + the M0 scaffold. Branch `feature/m1-vertical-slice` holds all of M1 (segs 0–5), tree clean.
-- **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`), create a client, see it listed, sign out.
+- **Phase:** **M2 — Projects & tasks** done and merged. Next: **M3 — Time tracking** on a fresh `feature/` branch off `develop`.
+- **Git:** `develop` holds requirements + plan + M0–M2 (local; publishing branches stays with the maintainer).
+- **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`) and build/browse clients → projects → assigned tasks; seed v2 provides a full demo structure.
 
 ## Done
 
@@ -22,15 +22,16 @@ The single source of "where we are and what's next," so any session can resume w
 - Planning fallout captured where it belongs: decisions **D13** (SQLite dialect strategy) and **D14** (org-id on join rows) logged in `architecture.md`; the **Invoice↔Project selection** entity added to `docs/requirements/data-model.md` (+ ER diagram).
 - **M0 — Scaffold built** (2026-07-02, `feature/m0-scaffold`): Next.js 16 + TS + Tailwind v4 scaffold with Prettier/ESLint; the full 15-model Prisma schema migrated on SQLite (Prisma 7: `prisma-client` generator, better-sqlite3 driver adapter, `prisma.config.ts`); idempotent seed v0 (org, admin user, 3 roles / 17 capability rows); Auth.js v5 credentials login working end-to-end with a session-aware shell page; Vitest + `money.ts` formatter with first tests; shadcn/ui initialized (Base UI preset).
 - **M1 — First vertical slice built** (2026-07-02, `feature/m1-vertical-slice`, segs 0–5): the one-way-door seams proven on one path — `scopedDb` org-scoping extension (G1) with pure `scopeArgs` + tests, `can()`/`requireCapability` (G2/G10) + `currentActor()` (G3) with tests; route guard at `src/proxy.ts` (cookie-presence redirect; authoritative check is `requireActor()` in the `(app)` layout); styled login; app shell (sidebar nav, org + user identity, sign-out); `/clients` list through `scopedDb`; first `src/features/` folder — create-client dialog + `client.manage`-guarded server action, currency pre-filled from org default; seed v1 (Acme/USD, Globex/EUR). 42 unit tests, lint/build/live-smoke green. Convention set: Prisma `create` types still require `organizationId`, call sites pass the actor's and `scopeArgs` stamps over it (documented in `scope.ts`).
+- **M2 — Projects & tasks built and merged** (2026-07-02, `feature/m2-projects-tasks`, segs 0–5): client detail page with edit + archive/unarchive (G12); projects under a client (billing-type selector; hourly → per-project/per-task method + rate per D6, fixed fee → amount; per-person/flat visible but disabled); org-wide task list (default-billable flag, archive, duplicate names arbitrated by the DB unique constraint → friendly P2002 error); project detail page with the assignment editor (assign/retire via `active` keeping the (project, task) slot, per-assignment billable override seeded from the task default, per-task rates only on hourly+per-task projects, re-derived server-side); all rate display through the projects read layer (G10 seam for `rate.view`); seed v2 (4 projects across all billing shapes, 4 tasks, 11 mixed assignments incl. a retired one). 73 unit tests, 32-check live smoke, lint/build green. Exit criterion met: the client → project → assigned-tasks structure is buildable entirely in the UI.
 
 ## In progress
 
-Nothing in flight. **M1 awaits human review + merge** of `feature/m1-vertical-slice` (hands-on exit check: log in as seeded admin → New client → see it listed → sign out → redirected to login).
+Nothing — M2 is closed and merged; M3 hasn't been opened yet.
 
 ## Next up (ordered)
 
-1. **You review + merge** `feature/m1-vertical-slice` into `develop` after the hands-on exit check above.
-2. **M2 — Projects & tasks:** client detail page, project CRUD (billing type/method per D6), global task list, project↔task assignments; seed v2. Same segmented rhythm on a fresh `feature/` branch off `develop`.
+1. **M3 — Time tracking:** day view + manual entry, live timer (one running max, D5/D12), weekly grid; seed v3. Fresh `feature/` branch off `develop`.
+2. **M4 — Invoicing lifecycle** per `docs/plan.md`.
 
 ## Open questions / deferred decisions
 
