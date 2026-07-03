@@ -5,9 +5,9 @@ The single source of "where we are and what's next," so any session can resume w
 ## Snapshot
 
 - **Date:** 2026-07-02
-- **Phase:** **M2 — Projects & tasks** in progress on `feature/m2-projects-tasks`. M0 and M1 merged.
-- **Git:** `develop` holds requirements + plan + M0 + M1. Branch `feature/m2-projects-tasks` carries the M2 segments below.
-- **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`), create a client, see it listed, sign out.
+- **Phase:** **M2 — Projects & tasks** built and green on `feature/m2-projects-tasks`; **awaiting your hands-on exit check + merge**. M0 and M1 merged.
+- **Git:** `develop` holds requirements + plan + M0 + M1. Branch `feature/m2-projects-tasks` carries all M2 segments, committed and green.
+- **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`) and build/browse clients → projects → assigned tasks; seed v2 provides a full demo structure.
 
 ## Done
 
@@ -25,18 +25,18 @@ The single source of "where we are and what's next," so any session can resume w
 
 ## In progress
 
-**M2 — Projects & tasks** on `feature/m2-projects-tasks` (plan.md § M2). Segments — each lands committed and green (lint + tests + build + live smoke):
+**M2 — Projects & tasks** on `feature/m2-projects-tasks` (plan.md § M2): **all segments done**, each committed and green (lint + tests + build + live smoke). Exit criterion met — a client → project → assigned-tasks structure can be built entirely in the UI.
 
 - [x] **Seg 0** — open the milestone: this checklist + status refresh.
 - [x] **Seg 1** — client detail page: route + header, edit-client dialog, archive/unarchive (G12: archived drop out of pickers, keep history).
 - [x] **Seg 2** — projects: create/edit dialog under a client (billing-type selector; hourly → method + rate per D6, fixed fee → amount; per-person/flat visible but disabled), archive; projects listed on the client detail page.
 - [x] **Seg 3** — tasks: org-wide task list page (name, default-billable, archive) with create/edit.
 - [x] **Seg 4** — project↔task assignments: editor on the project (assign/retire via `active`, per-assignment billable override, per-task rate when the method is per-task); rates rendered through the shared read layer (G10 seam for `rate.view`).
-- [ ] **Seg 5** — seed v2 (projects covering all three billing types + both wired methods, global task list, mixed assignments), exit-criteria sweep, changelog, wrap-up.
+- [x] **Seg 5** — seed v2 (four projects covering all three billing types + both wired methods, four-task global list, 11 mixed assignments incl. a non-billable override and a retired one), exit-criteria sweep (lint, 73 tests, build, 32-check live smoke), changelog, wrap-up.
 
 ## Next up (ordered)
 
-1. Finish the M2 segments above; **you review + merge** `feature/m2-projects-tasks` after the hands-on exit check (build a client → project → assigned-tasks structure entirely in the UI).
+1. **You review + merge** `feature/m2-projects-tasks` after the hands-on exit check (build a client → project → assigned-tasks structure entirely in the UI; seed v2 gives a browsable example — Acme has Website Redesign/Mobile App, Globex has ERP Migration/Internal Support).
 2. **M3 — Time tracking:** day view + manual entry, live timer (one running max, D5/D12), weekly grid; seed v3. Fresh `feature/` branch off `develop`.
 
 ## Open questions / deferred decisions
