@@ -3,6 +3,8 @@
 // Seed v1 (M1): two sample clients with invoice-ready details.
 // Seed v2 (M2): projects covering all three billing types and both wired
 // methods, the global task list, and assignments with mixed billable/rates.
+// Seed v3 (M3): a working week of time entries anchored to today, so the day
+// view and timer demo aren't empty.
 // Idempotent: everything is upserted on stable keys, so re-running is always
 // safe — each milestone extends this script (seed v1, v2, ...) rather than
 // replacing it. Run via `npm run db:seed` (or `npx prisma db seed`).
@@ -10,6 +12,7 @@
 import bcrypt from "bcryptjs";
 import { db } from "../src/lib/db";
 import { CAPABILITIES, type Capability } from "../src/lib/authz";
+import { addDays, todayLocal } from "../src/lib/dates";
 
 // Fixed sentinel UUID so upserts have a stable key (Organization has no natural unique field).
 const SEED_ORG_ID = "00000000-0000-4000-8000-000000000001";
@@ -216,6 +219,84 @@ const SEED_ASSIGNMENTS: {
   },
 ];
 
+// Seed v3: a plausible recent working week. Each entry is dated by an offset
+// from today (0 = today, -1 = yesterday, …) rather than a fixed calendar day,
+// so the demo week always lands on the current week and never in the future —
+// re-seeding slides the whole set forward to the new "today" (the upsert's
+// update writes the recomputed date). Spread across five live assignments and
+// both clients, mixing billable and non-billable; today carries two entries so
+// the day view has a running total and the timer demo has company. No entry is
+// left running — the exit check ("exactly one timer can run") starts clean.
+const SEED_TIME_ENTRIES: {
+  id: string;
+  assignmentId: string;
+  dayOffset: number;
+  durationSeconds: number;
+  note: string;
+}[] = [
+  // Three days ago.
+  {
+    id: "00000000-0000-4000-8000-000000000501",
+    assignmentId: SEED_ASSIGNMENTS[0].id, // Website Redesign · Development
+    dayOffset: -3,
+    durationSeconds: 9000, // 2:30
+    note: "Home page layout",
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000502",
+    assignmentId: SEED_ASSIGNMENTS[7].id, // ERP Migration · Development
+    dayOffset: -3,
+    durationSeconds: 10800, // 3:00
+    note: "Data model mapping",
+  },
+  // Two days ago.
+  {
+    id: "00000000-0000-4000-8000-000000000503",
+    assignmentId: SEED_ASSIGNMENTS[4].id, // Mobile App · Development
+    dayOffset: -2,
+    durationSeconds: 14400, // 4:00
+    note: "Auth flow",
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000504",
+    assignmentId: SEED_ASSIGNMENTS[1].id, // Website Redesign · Design
+    dayOffset: -2,
+    durationSeconds: 5400, // 1:30
+    note: "Style guide",
+  },
+  // Yesterday.
+  {
+    id: "00000000-0000-4000-8000-000000000505",
+    assignmentId: SEED_ASSIGNMENTS[0].id, // Website Redesign · Development
+    dayOffset: -1,
+    durationSeconds: 11700, // 3:15
+    note: "Nav and footer",
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000506",
+    assignmentId: SEED_ASSIGNMENTS[10].id, // Internal Support · Internal Meeting (non-billable)
+    dayOffset: -1,
+    durationSeconds: 1800, // 0:30
+    note: "Team standup",
+  },
+  // Today — two entries so the day view has a total and the timer demo isn't
+  // alone.
+  {
+    id: "00000000-0000-4000-8000-000000000507",
+    assignmentId: SEED_ASSIGNMENTS[4].id, // Mobile App · Development
+    dayOffset: 0,
+    durationSeconds: 7200, // 2:00
+    note: "Profile screen",
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000508",
+    assignmentId: SEED_ASSIGNMENTS[8].id, // ERP Migration · Project Management
+    dayOffset: 0,
+    durationSeconds: 3600, // 1:00
+    note: "Sprint planning",
+  },
+];
+
 async function main() {
   if (ADMIN_CAPS.length !== CAPABILITIES.length) {
     throw new Error("Seed drift: Admin should hold every capability");
@@ -327,6 +408,28 @@ async function main() {
     });
   }
 
+  // Time entries alone carry a date into `update`: re-seeding slides the demo
+  // week onto the current week (and resets the demo values), where every other
+  // entity uses `update: {}` to preserve edits.
+  const today = todayLocal();
+  for (const entry of SEED_TIME_ENTRIES) {
+    const date = addDays(today, entry.dayOffset);
+    await db.timeEntry.upsert({
+      where: { id: entry.id },
+      update: { date, durationSeconds: entry.durationSeconds, startedAt: null },
+      create: {
+        id: entry.id,
+        organizationId: org.id,
+        membershipId: membership.id,
+        projectTaskId: entry.assignmentId,
+        date,
+        durationSeconds: entry.durationSeconds,
+        note: entry.note,
+        startedAt: null,
+      },
+    });
+  }
+
   const counts = {
     organizations: await db.organization.count(),
     users: await db.user.count(),
@@ -338,8 +441,9 @@ async function main() {
     projects: await db.project.count(),
     tasks: await db.task.count(),
     assignments: await db.projectTask.count(),
+    timeEntries: await db.timeEntry.count(),
   };
-  console.log(`Seed v2 complete for "${org.name}" (${ADMIN_EMAIL}):`, counts);
+  console.log(`Seed v3 complete for "${org.name}" (${ADMIN_EMAIL}):`, counts);
 }
 
 main()
