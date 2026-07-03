@@ -31,7 +31,7 @@ The single source of "where we are and what's next," so any session can resume w
 - [x] **Seg 0** — open the milestone: this checklist + status refresh.
 - [x] **Seg 1** — the dates seam (`lib/dates.ts`: local-calendar "YYYY-MM-DD" day per D11, prev/next/today arithmetic, week windows; unit tests) + day view page (`/time` in the sidebar): one date's entries as a read-only list through a `features/time` read layer, billability shown as derived from the assignment.
 - [x] **Seg 2** — manual entry: create/edit/delete on the day view via a project→task picker (active assignments only), decimal-hours duration, note, date; future dates warn-and-acknowledge.
-- [ ] **Seg 3** — live timer: start fresh or from an entry, starting one stops the running one (app-layer policy, G6/D5), elapsed ticks live, stop collapses into `durationSeconds`; resume offers new pre-filled entry (encouraged) or continue-the-original (accumulates, keeps its day — D12).
+- [x] **Seg 3** — live timer: start fresh or from an entry, starting one stops the running one (app-layer policy, G6/D5), elapsed ticks live (day view + an always-visible sidebar widget), stop collapses into `durationSeconds`; resume offers new pre-filled entry (encouraged) or continue-the-original (accumulates, keeps its day — D12). Start-timer lives on today only (a timer measures now); running entries can't be edited until stopped.
 - [ ] **Seg 4** — weekly grid: projects×days cells for review and bulk entry.
 - [ ] **Seg 5** — seed v3 (a working week of entries across projects, including today), exit-criteria sweep, changelog, wrap-up.
 

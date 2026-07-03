@@ -21,6 +21,29 @@ export function formatHours(durationSeconds: number): string {
   return `${formatHoursInput(durationSeconds)}h`;
 }
 
+// Whole seconds between two instants, floored and never negative. A running
+// timer's live portion — the action collapses this into durationSeconds on
+// stop, and the client tick adds it for display, so both use the same integer
+// math (a clock skew that puts "now" before the start reads as 0, not
+// negative). Epoch-ms in, so it works the same on the server (Date.getTime())
+// and in the browser (Date.now()).
+export function elapsedSeconds(startedAtMs: number, nowMs: number): number {
+  return Math.max(0, Math.floor((nowMs - startedAtMs) / 1000));
+}
+
+// A live running timer reads as a clock ("0:05:03"), not decimal hours —
+// decimal hours only tick every 36 seconds, which looks frozen. Hours:mm:ss,
+// hours uncapped (a forgotten timer can pass 24h). Committed totals still use
+// formatHours; this is only the live display.
+export function formatClock(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.trunc(seconds / 3600);
+  const m = Math.trunc((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${h}:${pad(m)}:${pad(s)}`;
+}
+
 // The inverse for form input: a decimal-hours string ("1.5", ".25", "8",
 // optionally with an "h" suffix) → integer seconds, or null if it isn't a
 // clean non-negative duration. Digit-string math like parseMoneyToMinor — no

@@ -60,6 +60,48 @@ export async function listDayEntries(
   }));
 }
 
+// --- The running timer (G6: at most one per actor) ---
+
+export type RunningEntryView = {
+  id: string;
+  date: string; // the day it counts against (its start day — D11/D12)
+  clientName: string;
+  projectName: string;
+  taskName: string;
+  note: string | null;
+  baseSeconds: number; // accumulated before this run; live elapsed adds on top
+  startedAtMs: number; // non-null because it's running
+};
+
+// The actor's one open entry (startedAt set), or null. Read once by the shell
+// so the running timer is visible on every page, not just the day view — which
+// is the whole point of a live timer (start it, go work elsewhere).
+export async function findRunningEntry(
+  actor: Actor,
+): Promise<RunningEntryView | null> {
+  const entry = await scopedDb(actor.organizationId).timeEntry.findFirst({
+    where: { membershipId: actor.membershipId, startedAt: { not: null } },
+    include: {
+      projectTask: {
+        include: { task: true, project: { include: { client: true } } },
+      },
+    },
+    orderBy: { startedAt: "desc" }, // defensive: newest if the invariant ever slips
+  });
+  if (!entry || entry.startedAt === null) return null;
+
+  return {
+    id: entry.id,
+    date: entry.date,
+    clientName: entry.projectTask.project.client.name,
+    projectName: entry.projectTask.project.name,
+    taskName: entry.projectTask.task.name,
+    note: entry.note,
+    baseSeconds: entry.durationSeconds,
+    startedAtMs: entry.startedAt.getTime(),
+  };
+}
+
 // --- The project → task picker ---
 
 export type AssignmentOption = {

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  elapsedSeconds,
+  formatClock,
   formatHours,
   formatHoursInput,
   parseHoursToSeconds,
@@ -59,5 +61,37 @@ describe("parseHoursToSeconds", () => {
     for (const seconds of [0, 36, 3600, 4500, 5400, 27000, 86400]) {
       expect(parseHoursToSeconds(formatHoursInput(seconds))).toBe(seconds);
     }
+  });
+});
+
+describe("elapsedSeconds", () => {
+  it("floors the whole seconds between two instants", () => {
+    expect(elapsedSeconds(1000, 1000)).toBe(0);
+    expect(elapsedSeconds(0, 5000)).toBe(5); // 5s
+    expect(elapsedSeconds(0, 5999)).toBe(5); // partial second dropped
+    expect(elapsedSeconds(0, 3_600_000)).toBe(3600); // 1h
+  });
+
+  it("never returns negative on clock skew", () => {
+    expect(elapsedSeconds(5000, 0)).toBe(0);
+  });
+});
+
+describe("formatClock", () => {
+  it("formats seconds as h:mm:ss", () => {
+    expect(formatClock(0)).toBe("0:00:00");
+    expect(formatClock(5)).toBe("0:00:05");
+    expect(formatClock(65)).toBe("0:01:05");
+    expect(formatClock(3600)).toBe("1:00:00");
+    expect(formatClock(3663)).toBe("1:01:03");
+  });
+
+  it("does not cap the hours (a forgotten timer keeps counting)", () => {
+    expect(formatClock(90_000)).toBe("25:00:00");
+  });
+
+  it("floors a fractional second and clamps negatives", () => {
+    expect(formatClock(5.9)).toBe("0:00:05");
+    expect(formatClock(-1)).toBe("0:00:00");
   });
 });

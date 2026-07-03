@@ -1,5 +1,7 @@
 import { requireActor, signOut } from "@/lib/auth";
 import { scopedDb } from "@/lib/scope";
+import { findRunningEntry } from "@/features/time/queries";
+import { RunningTimerWidget } from "@/features/time/timer-controls";
 import { NavLinks } from "@/components/nav-links";
 import { Button } from "@/components/ui/button";
 
@@ -12,6 +14,7 @@ export default async function AppLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const actor = await requireActor();
   const org = await scopedDb(actor.organizationId).organization.findFirst();
+  const runningEntry = await findRunningEntry(actor);
 
   return (
     <div className="flex min-h-svh">
@@ -21,6 +24,7 @@ export default async function AppLayout({
           <p className="truncate text-xs text-muted-foreground">{org?.name}</p>
         </div>
         <NavLinks />
+        <RunningTimerWidget entry={runningEntry} />
         <div className="mt-auto border-t px-4 py-4">
           <p className="truncate text-sm font-medium">{actor.displayName}</p>
           <p className="truncate text-xs text-muted-foreground">
