@@ -1,9 +1,13 @@
 ﻿import { describe, expect, it } from "vitest";
 import {
+  divRoundHalfUp,
   formatMoney,
   formatMoneyInput,
+  invoiceTotals,
+  lineAmountMinor,
   minorUnitExponent,
   parseMoneyToMinor,
+  percentOfBps,
 } from "./money";
 
 describe("minorUnitExponent", () => {
@@ -84,5 +88,129 @@ describe("formatMoneyInput", () => {
         minor,
       );
     }
+  });
+});
+
+describe("divRoundHalfUp", () => {
+  it("rounds exact halves up, below-half down", () => {
+    expect(divRoundHalfUp(5, 10)).toBe(1); // 0.5 → 1
+    expect(divRoundHalfUp(4, 10)).toBe(0); // 0.4 → 0
+    expect(divRoundHalfUp(15, 10)).toBe(2); // 1.5 → 2
+    expect(divRoundHalfUp(14, 10)).toBe(1);
+  });
+
+  it("rounds half away from zero for negatives", () => {
+    expect(divRoundHalfUp(-5, 10)).toBe(-1);
+    expect(divRoundHalfUp(-4, 10)).toBe(0);
+    expect(divRoundHalfUp(-15, 10)).toBe(-2);
+  });
+
+  it("handles odd denominators (no float shortcuts)", () => {
+    expect(divRoundHalfUp(10, 3)).toBe(3); // 3.33…
+    expect(divRoundHalfUp(11, 3)).toBe(4); // 3.66…
+    expect(divRoundHalfUp(3, 2)).toBe(2); // 1.5
+  });
+
+  it("refuses non-integer input", () => {
+    expect(() => divRoundHalfUp(1.5, 1)).toThrow();
+    expect(() => divRoundHalfUp(1, 0.5)).toThrow();
+  });
+});
+
+describe("lineAmountMinor", () => {
+  it("multiplies milli-quantity by minor rate (12.5h × $150 = $1,875)", () => {
+    expect(lineAmountMinor(12500, 15000)).toBe(187500);
+  });
+
+  it("rounds an odd rate half-up per line", () => {
+    // 1.5h × $33.33 = $49.995 → $50.00
+    expect(lineAmountMinor(1500, 3333)).toBe(5000);
+    // 0.333h (20 min) × $99.99 = $33.2967 → $33.30
+    expect(lineAmountMinor(333, 9999)).toBe(3330);
+  });
+
+  it("treats a manual line's count of 1 as quantity 1000", () => {
+    expect(lineAmountMinor(1000, 4200)).toBe(4200);
+  });
+});
+
+describe("percentOfBps", () => {
+  it("computes the 8.25% tax case half-up", () => {
+    // $123.45 × 8.25% = $10.184625 → $10.18
+    expect(percentOfBps(12345, 825)).toBe(1018);
+    // $90.00 × 8.25% = $7.425 → exact half rounds up to $7.43
+    expect(percentOfBps(9000, 825)).toBe(743);
+  });
+
+  it("is exact for round percentages", () => {
+    expect(percentOfBps(10000, 1000)).toBe(1000); // 10%
+    expect(percentOfBps(10000, 10000)).toBe(10000); // 100%
+    expect(percentOfBps(10000, 0)).toBe(0);
+  });
+});
+
+describe("invoiceTotals", () => {
+  it("sums rounded lines into the subtotal (never re-derives)", () => {
+    const totals = invoiceTotals([5000, 3330, 187500], {});
+    expect(totals.subtotalMinor).toBe(195830);
+    expect(totals.discountMinor).toBe(0);
+    expect(totals.taxMinor).toBe(0);
+    expect(totals.totalMinor).toBe(195830);
+  });
+
+  it("applies discount before tax (the ordering case)", () => {
+    // $100.00 − 10% = $90.00; 8.25% of $90.00 = $7.425 → $7.43
+    const totals = invoiceTotals([10000], {
+      discountPercentBps: 1000,
+      taxRateBps: 825,
+    });
+    expect(totals.discountMinor).toBe(1000);
+    expect(totals.taxMinor).toBe(743);
+    expect(totals.totalMinor).toBe(9743);
+  });
+
+  it("takes a flat discount and clamps it to the subtotal", () => {
+    const flat = invoiceTotals([10000], { discountFlatMinor: 2500 });
+    expect(flat.discountMinor).toBe(2500);
+    expect(flat.totalMinor).toBe(7500);
+
+    // The live pool shrank below the stored flat discount: never negative.
+    const clamped = invoiceTotals([500], {
+      discountFlatMinor: 800,
+      taxRateBps: 825,
+    });
+    expect(clamped.discountMinor).toBe(500);
+    expect(clamped.totalMinor).toBe(0);
+  });
+
+  it("refuses percent and flat together (financial XOR)", () => {
+    expect(() =>
+      invoiceTotals([10000], { discountPercentBps: 500, discountFlatMinor: 1 }),
+    ).toThrow();
+  });
+
+  it("keeps the lines-sum-to-total invariant in integers", () => {
+    // Awkward lines from odd rates; the invariant is exact integer identity:
+    // total = sum(lines) − discount + tax, no float ever involved.
+    const lines = [3333, 6667, 1018, 743, 99999];
+    const totals = invoiceTotals(lines, {
+      discountPercentBps: 825,
+      taxRateBps: 825,
+    });
+    const sum = lines.reduce((a, b) => a + b, 0);
+    expect(totals.subtotalMinor).toBe(sum);
+    expect(totals.totalMinor).toBe(
+      totals.subtotalMinor - totals.discountMinor + totals.taxMinor,
+    );
+  });
+
+  it("handles the empty draft (no lines yet)", () => {
+    const totals = invoiceTotals([], { taxRateBps: 825 });
+    expect(totals).toEqual({
+      subtotalMinor: 0,
+      discountMinor: 0,
+      taxMinor: 0,
+      totalMinor: 0,
+    });
   });
 });
