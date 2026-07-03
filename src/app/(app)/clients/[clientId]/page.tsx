@@ -126,7 +126,14 @@ export default async function ClientDetailPage({
             <TableBody>
               {activeProjects.map((project) => (
                 <TableRow key={project.id}>
-                  <TableCell className="font-medium">{project.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link
+                      href={`/projects/${project.id}`}
+                      className="hover:underline"
+                    >
+                      {project.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {project.billingSummary}
                   </TableCell>
@@ -168,7 +175,12 @@ export default async function ClientDetailPage({
                   className="flex items-center justify-between gap-4"
                 >
                   <span className="text-sm text-muted-foreground">
-                    {project.name}
+                    <Link
+                      href={`/projects/${project.id}`}
+                      className="hover:text-foreground hover:underline"
+                    >
+                      {project.name}
+                    </Link>
                     <span className="ml-2">· {project.billingSummary}</span>
                   </span>
                   <form

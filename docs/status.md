@@ -31,7 +31,7 @@ The single source of "where we are and what's next," so any session can resume w
 - [x] **Seg 1** — client detail page: route + header, edit-client dialog, archive/unarchive (G12: archived drop out of pickers, keep history).
 - [x] **Seg 2** — projects: create/edit dialog under a client (billing-type selector; hourly → method + rate per D6, fixed fee → amount; per-person/flat visible but disabled), archive; projects listed on the client detail page.
 - [x] **Seg 3** — tasks: org-wide task list page (name, default-billable, archive) with create/edit.
-- [ ] **Seg 4** — project↔task assignments: editor on the project (assign/retire via `active`, per-assignment billable override, per-task rate when the method is per-task); rates rendered through the shared read layer (G10 seam for `rate.view`).
+- [x] **Seg 4** — project↔task assignments: editor on the project (assign/retire via `active`, per-assignment billable override, per-task rate when the method is per-task); rates rendered through the shared read layer (G10 seam for `rate.view`).
 - [ ] **Seg 5** — seed v2 (projects covering all three billing types + both wired methods, global task list, mixed assignments), exit-criteria sweep, changelog, wrap-up.
 
 ## Next up (ordered)

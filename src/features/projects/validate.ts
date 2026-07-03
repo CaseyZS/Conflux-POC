@@ -114,3 +114,43 @@ export function parseProjectInput(
     data: { name, billingType, billingMethod, hourlyRateMinor, fixedFeeMinor },
   };
 }
+
+// --- Project↔task assignments ---
+
+export type AssignmentInput = {
+  billable: boolean;
+  hourlyRateMinor: number | null; // only when the project prices per task
+};
+
+export type AssignmentFieldErrors = Partial<
+  Record<"taskId" | "hourlyRate", string>
+>;
+
+export type AssignmentInputResult =
+  | { ok: true; data: AssignmentInput }
+  | { ok: false; errors: AssignmentFieldErrors };
+
+// `perTaskRates` is derived from the owning project (hourly + per_task): only
+// then does an assignment carry money, and only a billable one needs it —
+// invoicing would otherwise find billable hours with no price. On any other
+// project the rate field doesn't exist, so a stale value normalizes to null.
+export function parseAssignmentInput(
+  raw: Record<string, unknown>,
+  currency: string,
+  perTaskRates: boolean,
+): AssignmentInputResult {
+  const billable = raw.billable != null;
+
+  let hourlyRateMinor: number | null = null;
+  if (perTaskRates && billable) {
+    hourlyRateMinor = parseMoneyToMinor(asTrimmedString(raw.hourlyRate), currency);
+    if (hourlyRateMinor === null || hourlyRateMinor === 0) {
+      return {
+        ok: false,
+        errors: { hourlyRate: "Enter an hourly rate greater than zero." },
+      };
+    }
+  }
+
+  return { ok: true, data: { billable, hourlyRateMinor } };
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseProjectInput } from "./validate";
+import { parseAssignmentInput, parseProjectInput } from "./validate";
 
 describe("parseProjectInput", () => {
   it("accepts hourly + per-project with a rate", () => {
@@ -180,5 +180,73 @@ describe("parseProjectInput", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(Object.keys(result.errors).sort()).toEqual(["hourlyRate", "name"]);
+  });
+});
+
+describe("parseAssignmentInput", () => {
+  it("billable assignment on a per-task project requires a rate", () => {
+    const result = parseAssignmentInput(
+      { billable: "on", hourlyRate: "95.00" },
+      "USD",
+      true,
+    );
+    expect(result).toEqual({
+      ok: true,
+      data: { billable: true, hourlyRateMinor: 9500 },
+    });
+  });
+
+  it("rejects a missing rate when the project prices per task", () => {
+    const result = parseAssignmentInput(
+      { billable: "on", hourlyRate: "" },
+      "USD",
+      true,
+    );
+    expect(result).toEqual({
+      ok: false,
+      errors: { hourlyRate: "Enter an hourly rate greater than zero." },
+    });
+  });
+
+  it("rejects a zero rate (that's what non-billable is for)", () => {
+    const result = parseAssignmentInput(
+      { billable: "on", hourlyRate: "0.00" },
+      "USD",
+      true,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("non-billable assignment needs no rate and normalizes one away", () => {
+    const result = parseAssignmentInput(
+      { billable: null, hourlyRate: "95.00" },
+      "USD",
+      true,
+    );
+    expect(result).toEqual({
+      ok: true,
+      data: { billable: false, hourlyRateMinor: null },
+    });
+  });
+
+  it("on a non-per-task project a stale rate normalizes to null", () => {
+    const result = parseAssignmentInput(
+      { billable: "on", hourlyRate: "95.00" },
+      "USD",
+      false,
+    );
+    expect(result).toEqual({
+      ok: true,
+      data: { billable: true, hourlyRateMinor: null },
+    });
+  });
+
+  it("parses the rate with the client currency's exponent", () => {
+    const result = parseAssignmentInput(
+      { billable: "on", hourlyRate: "5000" },
+      "JPY",
+      true,
+    );
+    expect(result.ok && result.data.hourlyRateMinor).toBe(5000);
   });
 });
