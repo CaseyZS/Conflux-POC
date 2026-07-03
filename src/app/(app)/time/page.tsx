@@ -154,7 +154,11 @@ export default async function TimePage({
                   {entry.note}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {entry.billable ? "Billable" : "Non-billable"}
+                  {entry.billed
+                    ? "Billed"
+                    : entry.billable
+                      ? "Billable"
+                      : "Non-billable"}
                 </TableCell>
                 <TableCell className="text-right font-medium tabular-nums">
                   {entry.running && entry.startedAtMs !== null ? (
@@ -170,6 +174,12 @@ export default async function TimePage({
                 <TableCell className="text-right">
                   {entry.running ? (
                     <StopButton entryId={entry.id} />
+                  ) : entry.billed ? (
+                    // On an invoice = immutable (the actions refuse too);
+                    // no edit, no resume — the row is financial history now.
+                    <span className="text-xs text-muted-foreground">
+                      On invoice
+                    </span>
                   ) : (
                     <div className="flex items-center justify-end gap-1">
                       <TimeEntryDialog

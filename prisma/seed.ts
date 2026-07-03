@@ -5,14 +5,20 @@
 // methods, the global task list, and assignments with mixed billable/rates.
 // Seed v3 (M3): a working week of time entries anchored to today, so the day
 // view and timer demo aren't empty.
+// Seed v4 (M4): invoices — a finalized-and-paid one over a dedicated history
+// project (billed through the real finalizeInvoice, so seeded history took
+// the same path the button does), and an open draft over the demo week's
+// unbilled pool.
 // Idempotent: everything is upserted on stable keys, so re-running is always
 // safe — each milestone extends this script (seed v1, v2, ...) rather than
 // replacing it. Run via `npm run db:seed` (or `npx prisma db seed`).
 
 import bcrypt from "bcryptjs";
 import { db } from "../src/lib/db";
+import { scopedDb } from "../src/lib/scope";
 import { CAPABILITIES, type Capability } from "../src/lib/authz";
 import { addDays, todayLocal } from "../src/lib/dates";
+import { finalizeInvoice } from "../src/features/invoices/finalize";
 
 // Fixed sentinel UUID so upserts have a stable key (Organization has no natural unique field).
 const SEED_ORG_ID = "00000000-0000-4000-8000-000000000001";
@@ -105,6 +111,16 @@ const SEED_PROJECTS: {
     clientId: SEED_CLIENTS[1].id, // Globex (EUR)
     name: "Internal Support",
     billingType: "non_billable",
+  },
+  // Seed v4: the finalized invoice's project. Its entries are last-week
+  // history (below), so billing it leaves the demo week's pool untouched.
+  {
+    id: "00000000-0000-4000-8000-000000000205",
+    clientId: SEED_CLIENTS[0].id, // Acme (USD)
+    name: "Brand Refresh",
+    billingType: "hourly",
+    billingMethod: "per_project",
+    hourlyRateMinor: 11000, // $110.00/hr
   },
 ];
 
@@ -217,6 +233,19 @@ const SEED_ASSIGNMENTS: {
     taskId: SEED_TASKS[3].id, // Internal Meeting
     billable: false,
   },
+  // Brand Refresh (hourly · project rate): the billed-history project (v4).
+  {
+    id: "00000000-0000-4000-8000-000000000412",
+    projectId: SEED_PROJECTS[4].id,
+    taskId: SEED_TASKS[1].id, // Design
+    billable: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000413",
+    projectId: SEED_PROJECTS[4].id,
+    taskId: SEED_TASKS[0].id, // Development
+    billable: true,
+  },
 ];
 
 // Seed v3: a plausible recent working week. Each entry is dated by an offset
@@ -296,6 +325,54 @@ const SEED_TIME_ENTRIES: {
     note: "Sprint planning",
   },
 ];
+
+// Seed v4: the finalized invoice's work — Brand Refresh, a week and a half
+// back. Unlike the demo week these do NOT slide on re-seed (create-only):
+// they're billed history the moment the seed finalizes invoice INV-0001, and
+// billed entries are immutable everywhere else in the app, the seed included.
+// Design 9:00 × $110 = $990.00, Development 4:00 × $110 = $440.00 → $1,430.00.
+const SEED_HISTORY_ENTRIES: typeof SEED_TIME_ENTRIES = [
+  {
+    id: "00000000-0000-4000-8000-000000000509",
+    assignmentId: SEED_ASSIGNMENTS[11].id, // Brand Refresh · Design
+    dayOffset: -14,
+    durationSeconds: 10800, // 3:00
+    note: "Moodboards and direction",
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000510",
+    assignmentId: SEED_ASSIGNMENTS[12].id, // Brand Refresh · Development
+    dayOffset: -13,
+    durationSeconds: 9000, // 2:30
+    note: "Style tokens",
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000511",
+    assignmentId: SEED_ASSIGNMENTS[11].id, // Brand Refresh · Design
+    dayOffset: -12,
+    durationSeconds: 14400, // 4:00
+    note: "Logo exploration",
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000512",
+    assignmentId: SEED_ASSIGNMENTS[12].id, // Brand Refresh · Development
+    dayOffset: -11,
+    durationSeconds: 5400, // 1:30
+    note: "Landing hero build",
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000513",
+    assignmentId: SEED_ASSIGNMENTS[11].id, // Brand Refresh · Design
+    dayOffset: -10,
+    durationSeconds: 7200, // 2:00
+    note: "Brand book layout",
+  },
+];
+
+// Seed v4: the two invoices — fixed ids like everything else.
+const INVOICE_PAID_ID = "00000000-0000-4000-8000-000000000701";
+const INVOICE_DRAFT_ID = "00000000-0000-4000-8000-000000000702";
+const MANUAL_LINE_ID = "00000000-0000-4000-8000-000000000801";
 
 async function main() {
   if (ADMIN_CAPS.length !== CAPABILITIES.length) {
@@ -410,9 +487,13 @@ async function main() {
 
   // Time entries alone carry a date into `update`: re-seeding slides the demo
   // week onto the current week (and resets the demo values), where every other
-  // entity uses `update: {}` to preserve edits.
+  // entity uses `update: {}` to preserve edits. Billed entries are the
+  // exception to the exception — once an invoice snapshot includes a row it's
+  // immutable app-wide, and the seed honors that by skipping it entirely.
   const today = todayLocal();
   for (const entry of SEED_TIME_ENTRIES) {
+    const existing = await db.timeEntry.findUnique({ where: { id: entry.id } });
+    if (existing?.invoiceId) continue;
     const date = addDays(today, entry.dayOffset);
     await db.timeEntry.upsert({
       where: { id: entry.id },
@@ -430,6 +511,112 @@ async function main() {
     });
   }
 
+  // The billed-history entries never slide or reset: create-only, so their
+  // dates freeze relative to the first seed run — history stays put.
+  for (const entry of SEED_HISTORY_ENTRIES) {
+    await db.timeEntry.upsert({
+      where: { id: entry.id },
+      update: {},
+      create: {
+        id: entry.id,
+        organizationId: org.id,
+        membershipId: membership.id,
+        projectTaskId: entry.assignmentId,
+        date: addDays(today, entry.dayOffset),
+        durationSeconds: entry.durationSeconds,
+        note: entry.note,
+        startedAt: null,
+      },
+    });
+  }
+
+  // Seed v4 — invoice history: a draft over Brand Refresh, finalized through
+  // the real finalizeInvoice (same transaction the UI button runs: number
+  // INV-0001 from the org counter, snapshot, billed links), then marked paid.
+  // Re-seeding skips all of it once the invoice is out of draft.
+  const paidInvoice = await db.invoice.upsert({
+    where: { id: INVOICE_PAID_ID },
+    update: {},
+    create: {
+      id: INVOICE_PAID_ID,
+      organizationId: org.id,
+      clientId: SEED_CLIENTS[0].id, // Acme
+      paymentTermsDays: org.defaultPaymentTermsDays,
+    },
+  });
+  await db.invoiceProject.upsert({
+    where: {
+      invoiceId_projectId: {
+        invoiceId: INVOICE_PAID_ID,
+        projectId: SEED_PROJECTS[4].id, // Brand Refresh
+      },
+    },
+    update: {},
+    create: {
+      invoiceId: INVOICE_PAID_ID,
+      projectId: SEED_PROJECTS[4].id,
+      organizationId: org.id,
+      includeTime: true,
+      includeFixedFee: false,
+    },
+  });
+  if (paidInvoice.status === "draft") {
+    const finalized = await finalizeInvoice(scopedDb(org.id), INVOICE_PAID_ID);
+    if (!finalized.ok) {
+      throw new Error(`Seed finalize failed: ${finalized.message}`);
+    }
+    await db.invoice.update({
+      where: { id: INVOICE_PAID_ID },
+      data: { status: "paid" },
+    });
+  }
+
+  // The open draft: the demo week's unbilled Acme pool plus a manual line,
+  // with a tax and PO so the money block isn't empty. All its numbers stay
+  // derived live — finalizing it is the demo's grand finale, not the seed's.
+  await db.invoice.upsert({
+    where: { id: INVOICE_DRAFT_ID },
+    update: {},
+    create: {
+      id: INVOICE_DRAFT_ID,
+      organizationId: org.id,
+      clientId: SEED_CLIENTS[0].id, // Acme
+      paymentTermsDays: org.defaultPaymentTermsDays,
+      taxRateBps: 825, // 8.25%
+      poNumber: "PO-2026-117",
+    },
+  });
+  for (const projectId of [SEED_PROJECTS[0].id, SEED_PROJECTS[1].id]) {
+    await db.invoiceProject.upsert({
+      where: {
+        invoiceId_projectId: { invoiceId: INVOICE_DRAFT_ID, projectId },
+      },
+      update: {},
+      create: {
+        invoiceId: INVOICE_DRAFT_ID,
+        projectId,
+        organizationId: org.id,
+        includeTime: true,
+        includeFixedFee: false,
+      },
+    });
+  }
+  await db.invoiceLine.upsert({
+    where: { id: MANUAL_LINE_ID },
+    update: {},
+    create: {
+      id: MANUAL_LINE_ID,
+      organizationId: org.id,
+      invoiceId: INVOICE_DRAFT_ID,
+      source: "manual",
+      description: "Stock photography license",
+      quantityMilli: 1000, // 1 ×
+      unitRateMinor: 15000, // $150.00
+      amountMinor: 15000,
+      position: 0,
+    },
+  });
+
   const counts = {
     organizations: await db.organization.count(),
     users: await db.user.count(),
@@ -442,8 +629,10 @@ async function main() {
     tasks: await db.task.count(),
     assignments: await db.projectTask.count(),
     timeEntries: await db.timeEntry.count(),
+    invoices: await db.invoice.count(),
+    invoiceLines: await db.invoiceLine.count(),
   };
-  console.log(`Seed v3 complete for "${org.name}" (${ADMIN_EMAIL}):`, counts);
+  console.log(`Seed v4 complete for "${org.name}" (${ADMIN_EMAIL}):`, counts);
 }
 
 main()

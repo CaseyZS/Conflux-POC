@@ -11,8 +11,8 @@ Updated as milestones land; this is the table that persists build state across s
 | M0 | Scaffolded app boots: Next.js + TS + Prisma/SQLite + Tailwind/shadcn + Auth.js, schema migrated, seed runs | ✅ Done (2026-07-02) |
 | M1 | First vertical slice: seeded login → create a client → list clients (proves G1/G3/G10 end-to-end) | ✅ Done (2026-07-02) |
 | M2 | Projects & tasks: project CRUD with billing type/method, global task list, project↔task assignment | ✅ Done (2026-07-02) |
-| M3 | Time tracking: live timer + manual entry, day + weekly views, single-timer policy | ✅ Built (2026-07-02) — pending review + merge |
-| M4 | Invoicing lifecycle: draft from time / fixed fee / manual lines, grouping, finalize→snapshot, mark-as-paid | ⬜ Not started |
+| M3 | Time tracking: live timer + manual entry, day + weekly views, single-timer policy | ✅ Done (2026-07-03) |
+| M4 | Invoicing lifecycle: draft from time / fixed fee / manual lines, grouping, finalize→snapshot, mark-as-paid | ✅ Built (2026-07-03) — pending review + merge |
 | M5 | Invoice output & demo polish: on-screen + PDF from one component (G9), branding, full demo seed + walkthrough | ⬜ Not started |
 
 ## Milestones at a glance
