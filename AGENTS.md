@@ -47,6 +47,17 @@ Start here each session; these persist state so we don't rely on memory or chat 
 
 - **Releases** run through the `release` skill (`.claude/skills/release/SKILL.md`), which auto-triggers on release intent ("make a new release", "cut vX.Y.Z") and holds the full checklist.
 
+## Release bindings
+
+Project-specific values the `release` skill resolves before running (recorded 2026-07-03, first cut at v0.1.0):
+
+- **Version file:** `package.json` → `"version"`.
+- **Clean-CI command:** `npm ci && npm test`. A `postinstall` runs `prisma generate`, so a clean install regenerates the (gitignored) Prisma client at `src/generated/prisma` before tests — without it, DB-touching test suites fail to import the client.
+- **Tag format:** `vX.Y.Z`, annotated.
+- **Changelog:** `CHANGELOG.md`, Keep-a-Changelog style, dated headers as `## [X.Y.Z] - YYYY-MM-DD` (hyphen); no compare-link refs.
+- **Branches:** work branch `develop` → release branch `main` (gitflow).
+- **Deploy:** none yet (Railway is the chosen target but not provisioned; see `docs/deployment.md`).
+
 ## Feature scoping
 
 - When scoping whether/how to build a feature, **quantify the trade-offs concretely** — development effort (hours/days) and runtime cost — for each option, with a recommendation, before picking an approach.
