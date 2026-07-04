@@ -1,0 +1,315 @@
+// Conflux schema — transcribed from docs/plan.md (parts 1 + 2).
+// Conventions: money = integer minor units, `Minor` suffix (G4); dates = "YYYY-MM-DD" strings (D11);
+// semantic enums = String + TS union validation (D13); organizationId on every org-scoped row (G1/D14);
+// Restrict by default, Cascade only where nothing financial can be lost (G12).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite" // → "postgresql" at hosting time; a config change, not a rewrite (G8)
+}
+
+model Organization {
+  id                      String   @id @default(uuid())
+  name                    String
+  fromDetails             String? // free-text "from" block (address, email, phone) for invoice headers
+  defaultCurrency         String   @default("USD") // ISO-4217; pre-fills new clients
+  defaultTaxRateBps       Int      @default(0) // basis points: 8.25% = 825
+  defaultPaymentTermsDays Int      @default(30)
+  invoiceFooter           String?
+  invoiceNumberPrefix     String   @default("INV-")
+  invoiceNextNumber       Int      @default(1) // vestigial: numbering is now highest-existing + 1, pre-filled + editable on the draft (D15)
+  timeDisplayFormat       String   @default("hms") // "hms" | "decimal" — how durations show in the timesheet views (Settings; TS union in code)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  memberships Membership[]
+  roles       Role[]
+  clients     Client[]
+  projects    Project[]
+  tasks       Task[]
+  assets      Asset[]
+  timeEntries TimeEntry[]
+  invoices    Invoice[]
+}
+
+model Asset {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  kind           String // "logo" for now (TS union in code)
+  mimeType       String
+  data           Bytes
+  createdAt      DateTime     @default(now())
+
+  invoiceLogos Invoice[] @relation("InvoiceLogo")
+
+  @@index([organizationId])
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships Membership[] // global identity: deliberately NO organizationId (G11)
+}
+
+model Membership {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  active         Boolean      @default(true) // seat switch: inactive ⇒ authn + authz both deny
+
+  roles           MembershipRole[]
+  clientsCreated  Client[]         @relation("ClientCreatedBy")
+  projectsCreated Project[]        @relation("ProjectCreatedBy")
+  tasksCreated    Task[]           @relation("TaskCreatedBy")
+  timeEntries     TimeEntry[]
+  // later (additive): per-person billing rate, when the "per_person" method gets wired (D6)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+}
+
+model Role {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  name           String
+
+  capabilities RoleCapability[]
+  memberships  MembershipRole[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model RoleCapability {
+  roleId         String
+  role           Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  organizationId String
+  capability     String // e.g. "invoice.manage" — data, not enum, so roles stay editable (G2)
+
+  @@id([roleId, capability])
+  @@index([organizationId])
+}
+
+model MembershipRole {
+  membershipId   String
+  membership     Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  roleId         String
+  role           Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  organizationId String
+  createdAt      DateTime   @default(now())
+
+  @@id([membershipId, roleId])
+  @@index([organizationId])
+}
+
+model Client {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  name           String
+  contactPerson  String?
+  email          String?
+  billingAddress String? // free-text block, rendered as-is on invoices
+  currency       String // ISO-4217; set from org default at creation, then owned here — projects derive it, never re-store (G5)
+  archivedAt     DateTime?
+  createdById    String
+  createdBy      Membership   @relation("ClientCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  projects Project[]
+  invoices Invoice[]
+
+  @@index([organizationId])
+}
+
+model Project {
+  id                String       @id @default(uuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  clientId          String
+  client            Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  name              String
+  billingType       String // "hourly" | "fixed_fee" | "non_billable"
+  billingMethod     String? // when hourly: "per_project" | "per_task" | "per_person" | "flat" — all modeled, first two wired (D6)
+  hourlyRateMinor   Int? // when hourly + per_project (G4)
+  fixedFeeMinor     Int? // when fixed_fee
+  fixedFeeInvoiceId String? // anti-double-bill link, set at finalize
+  fixedFeeInvoice   Invoice?     @relation("ProjectFixedFeeInvoice", fields: [fixedFeeInvoiceId], references: [id], onDelete: Restrict)
+  archivedAt        DateTime?
+  createdById       String
+  createdBy         Membership   @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  taskAssignments   ProjectTask[]
+  invoiceSelections InvoiceProject[]
+  manualLines       InvoiceLine[]
+
+  @@index([organizationId])
+  @@index([clientId])
+}
+
+model Task {
+  id              String       @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  name            String
+  defaultBillable Boolean      @default(true)
+  archivedAt      DateTime? // retire from the org list; existing assignments/entries keep working (G12)
+  createdById     String
+  createdBy       Membership   @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  assignments ProjectTask[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model ProjectTask {
+  id              String   @id @default(uuid()) // own UUID because TimeEntry FKs target this row
+  organizationId  String
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade) // zero-hour joins only; TimeEntry Restrict blocks the rest
+  taskId          String
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  billable        Boolean // initialized from task.defaultBillable at assignment, then owned per-assignment
+  hourlyRateMinor Int? // when project.billingMethod = "per_task"
+  active          Boolean  @default(true) // drop from the picker without touching history (G12)
+  createdAt       DateTime @default(now())
+
+  timeEntries TimeEntry[]
+
+  @@unique([projectId, taskId])
+  @@index([organizationId])
+}
+
+model TimeEntry {
+  id              String       @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  membershipId    String
+  membership      Membership   @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  projectTaskId   String
+  projectTask     ProjectTask  @relation(fields: [projectTaskId], references: [id], onDelete: Restrict)
+  date            String // "YYYY-MM-DD", user-local calendar day (D11); timer spanning midnight keeps its start day
+  durationSeconds Int          @default(0) // closed sessions' total; a running entry adds live elapsed from startedAt at display
+  note            String?
+  startedAt       DateTime? // non-null = running (D5); timer plumbing only, not an audit record
+  invoiceId       String? // set at finalize = billed, immutable thereafter (anti-double-bill)
+  invoice         Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([membershipId, date]) // day + week views: my entries for a date range
+  @@index([projectTaskId])
+  @@index([invoiceId]) // unbilled pool: invoiceId IS NULL
+}
+
+model Invoice {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  clientId       String
+  client         Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  status         String       @default("draft") // "draft" | "sent" | "paid"
+  number         String? // pre-filled (highest + 1) + editable on the draft, frozen at finalize (D15)
+
+  // draft choices (stored from the start, editable while draft)
+  grouping           String  @default("task") // "task" | "person" | "summary" | "detailed"
+  showDate           Boolean @default(false) // optional line-item detail toggles
+  showPerson         Boolean @default(false)
+  showTask           Boolean @default(false)
+  showNote           Boolean @default(false)
+  issueDate          String? // "YYYY-MM-DD"
+  dueDate            String? // null on draft = derive issueDate + terms at display; resolved + frozen at finalize (user-overridable)
+  paymentTermsDays   Int // pre-filled from org default at creation, then owned here
+  subject            String? // free-text subject line shown above the line items
+  poNumber           String?
+  discountPercentBps Int? // XOR discountFlatMinor (app-validated)
+  discountFlatMinor  Int?
+  taxRateBps         Int? // single tax, applied after discount; pre-filled from org default
+  footer             String? // pre-filled from org default
+
+  // snapshot columns — NULL until finalize (draft derives these live, G5)
+  currency      String?
+  subtotalMinor Int?
+  discountMinor Int?
+  taxMinor      Int?
+  totalMinor    Int?
+  billToName    String?
+  billToContact String?
+  billToAddress String?
+  fromName      String?
+  fromDetails   String?
+  logoAssetId   String? // logo by reference
+  logoAsset     Asset?  @relation("InvoiceLogo", fields: [logoAssetId], references: [id], onDelete: Restrict)
+
+  lines             InvoiceLine[]
+  projectSelections InvoiceProject[]
+  billedTimeEntries TimeEntry[]
+  billedFixedFees   Project[]        @relation("ProjectFixedFeeInvoice")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, number]) // SQLite + Postgres both allow many NULLs here, so drafts don't collide
+  @@index([organizationId])
+  @@index([clientId])
+}
+
+model InvoiceProject {
+  invoiceId       String
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  organizationId  String
+  includeTime     Boolean  @default(true) // pull this project's unbilled billable time
+  includeFixedFee Boolean  @default(false) // include this project's flat fee as a line
+  createdAt       DateTime @default(now())
+
+  @@id([invoiceId, projectId])
+  @@index([organizationId])
+}
+
+model InvoiceLine {
+  id             String   @id @default(uuid())
+  organizationId String
+  invoiceId      String
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade) // only drafts are deletable; takes manual lines with it
+  source         String // "time" | "fixed_fee" | "manual" — time + fee lines written only at finalize; manual lines exist from the draft
+  description    String
+  quantityMilli  Int // thousandths of a unit: hours for time lines (12.5h = 12500), count for fee/manual (1 = 1000)
+  unitRateMinor  Int
+  amountMinor    Int // per-line, half-up (D9); subtotal = sum of these
+  projectId      String? // manual lines: optional project attribution, captured at entry (can't backfill a finalized invoice)
+  project        Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  position       Int      @default(0) // print order is part of the financial record
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([invoiceId])
+  @@index([projectId])
+}

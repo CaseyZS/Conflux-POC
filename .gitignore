@@ -18,3 +18,26 @@ $RECYCLE.BIN/
 .env
 .env.*
 !.env.example
+
+# --- Node ---
+/node_modules
+npm-debug.log*
+
+# --- Next.js ---
+/.next/
+/out/
+/build
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Testing ---
+/coverage
+
+# --- Deploy ---
+.vercel
+*.pem
+
+# --- Prisma (generated client + local SQLite db) ---
+/src/generated/prisma
+/prisma/*.db
+/prisma/*.db-journal

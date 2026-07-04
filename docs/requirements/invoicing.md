@@ -1,0 +1,77 @@
+# Invoicing
+
+_Part of the [Conflux requirements](../requirements.md). Builds on the [data model](./data-model.md)._
+
+The payoff feature and the heart of the stakeholder demo: turning tracked work into a professional-looking invoice. "Looks professional" is the explicit bar.
+
+## What feeds an invoice (all three, mixable on one invoice)
+
+An invoice bills **one Client** and may draw from **one or more of that client's Projects** (the bill-to comes from the Client record). Three kinds of source line, mixable on the same invoice:
+
+- **Tracked billable time** — unbilled billable hours for the client's hourly projects become line items (hours × rate). Finalizing **links** those entries to the invoice so they can't be billed again.
+- **Fixed-fee amount** — a fixed-fee project's flat fee as a single line, independent of hours. It is billable **once**: finalizing links the fee to the invoice the same way, so a second invoice won't offer it again. (Milestone/installment billing of a fee is out of scope for the POC.)
+- **Manual line items** — free-form lines the user adds (reimbursables, ad-hoc charges, etc.). These belong to the invoice itself, so there's no double-bill concern.
+
+## Line grouping — chosen per invoice
+
+When creating an invoice from tracked time, the user picks how to itemize. All four are computed from the same underlying billable entries — grouping is a presentation choice, not stored duplication. (When an invoice spans several of the client's projects, whether lines are also sectioned per project is a display detail, not a data one — a two-way door.)
+
+- **By task** — one line per task (`Design — 12h × $150`). The clean default.
+- **By person** — one line per team member, **split by rate** where a person logged at more than one rate (e.g. `Bob (Design) — 5h × $150`, `Bob (Admin) — 5h × $75`); every line always carries a single rate. Meaningful once multi-user exists.
+- **Summary** — a single lump-sum "Services rendered" line.
+- **Detailed** — one line per time entry, notes included.
+
+## Optional line-item detail
+
+Independent of the grouping, the user can toggle which per-entry fields appear on the line items — **date, person, task, and note** — the way Harvest exposes detail columns. Like grouping, these are **derived** from the same billable entries (a presentation choice, not stored duplication), so showing them is additive and changes nothing about what's stored; at finalize the shown detail is captured in the line snapshot. Most useful with the **Detailed** grouping, but the toggles can annotate any grouping.
+
+## Purchase orders (per-project spend tracking)
+
+_Requirement captured 2026-07-03; a post-POC addition, not part of milestones M0–M5._
+
+A client often authorizes spending against a project up front via a **purchase order** with a fixed amount, and wants each invoice booked against the right PO so the PO's remaining balance is visible — not just the project's total. Conflux models this per-PO, so a project with several POs tracks each one's burn-down separately.
+
+- **Defined on the project.** POs live on the project (a project can have many — see the [data model](./data-model.md)); each carries the client's PO reference and an authorized amount, in the project's client currency. They're managed from the project-editing screen.
+- **Chosen per project when invoicing.** Because an invoice can span several of a client's projects, the PO is selected **per included project** — for each project you're billing, a dropdown offers that project's POs (or "none"). One invoice can therefore draw on several POs at once, each for its own project's portion.
+- **Remaining funds are derived, never stored.** A PO's remaining balance = its authorized amount − the amounts **finalized, non-void** invoices have billed against it. This is computed from the invoices, not kept as a running counter on the PO (guardrail G5 / the duplication trigger A). A welcome consequence: **voiding** an invoice releases its PO consumption automatically — the derivation simply stops counting a void invoice — exactly as void already releases the time-entry and fixed-fee links. A draft may **project** "remaining after this draft," but only **finalize** actually consumes (the same "settles at finalize" rule as the anti-double-bill links).
+- **What counts against a PO** is the portion of the invoice attributable to that project's selection: its tracked-time lines, its fixed fee, and any manual lines attributed to it. (Grouping is still a presentation choice over those amounts; per-project sectioning keeps the attribution legible when several projects share one invoice.)
+- **Overdraw is warn-but-allow.** If an invoice would bill more against a PO than it has remaining, finalize **warns and asks for acknowledgement** (the same pattern as logging a future-dated time entry) but does not block — a client may verbally approve an overage. This is deliberately **application policy, not a schema rule** (guardrail G6), so tightening it to a hard block later is a policy edit, not a migration.
+
+**Open question — attribution under the Summary grouping.** Per-PO consumption needs each invoice amount attributable to one project's PO. That's clean for tracked-time lines (each entry belongs to a project), fixed fees, and project-attributed manual lines. The **Summary** grouping, though, can collapse work across several projects into a single "Services rendered" line — which has no single project, so no single PO. Options when a PO-tracked invoice uses Summary: (a) keep the lump line for display but attribute consumption from the **underlying** per-project amounts (the snapshot still holds them); (b) force **per-project sectioning** (one Summary line per project) whenever any included project has a PO; or (c) disallow Summary + PO together. Leaning (a) — it keeps attribution exact without constraining the presentation — but it's unsettled; resolve when building.
+
+## Lifecycle: draft → finalized → sent → paid
+
+- **Draft** — reads **live** from currently unbilled billable time; edit freely, choose grouping, add manual lines. A draft **stores its choices** (client, the projects/fees included, the PO chosen per project, grouping, manual lines, discount, tax, dates, footer) but **not** the computed time line items — those stay derived from the live entries until finalize. _Planned (not in the POC):_ scope the pull to a **period** — month, quarter, or a custom cutoff — instead of all unbilled time; a purely additive filter, since "unbilled" already excludes prior-invoice entries.
+- **Finalize** — the numbers **snapshot** onto the invoice (line items, rates, amounts, **currency**, and the frozen **bill-to** and **from/branding** blocks), the **invoice number** is frozen, and the billed time entries — plus any fixed fee — are **linked to this invoice** so they can never be invoiced twice. Finalize is also the moment each selected **PO's funds are consumed** (see [Purchase orders](#purchase-orders-per-project-spend-tracking)): the invoice now counts against that PO's remaining balance, and the PO reference is frozen into the snapshot. The invoice number is **pre-filled when the draft is created** — one past the highest number on any existing invoice, under the Organization's prefix — and stays **editable while the invoice is a draft** (only the numeric part; the prefix is fixed), then freezes at finalize. Numbers are **unique per organization** (a duplicate is rejected), but because they're editable they are **not strictly gapless** — a deliberate revision of the original gapless-counter design (see the decision log in [architecture](../architecture.md)). The finalized invoice is immutable: later edits to a project's rate — or to the client's address or the company's branding — do not change it. (This is the "derive until finalized, then snapshot" rule from the [data model](./data-model.md), realized.)
+- **Sent / Paid** — manual status flags (`draft` → `sent` → `paid`). No payment processing or gateway in the POC; "mark as paid" is a human action.
+- **Void** — a finalized invoice (sent or paid) that turns out to be wrong can be **voided**. It stays on record with its number, marked **void** (the audit trail is preserved), and the time entries and fixed fees it billed are **released back to the unbilled pool** so a corrected invoice can bill them again. This is the POC's correction path — a finalized invoice is never edited in place.
+
+The "billed" state of a time entry is real state (a link to the invoice that billed it), justified because it prevents double-billing — this is a deliberate stored value, not a convenience copy. Because this link is set only at **finalize**, deleting a **draft** removes just the draft and its manual lines — no entries were ever reserved, so none need releasing back to the unbilled pool. **Voiding** a finalized invoice is the reverse of finalize: it releases those links.
+
+**Correction: void is the POC path; credit note is deferred.** A finalized invoice can't be edited in place. Voiding (above) is the correction flow — release the linked work and issue a corrected invoice. A **credit note** — a reversing document that _offsets_ an invoice already paid or filed rather than cancelling it, keeping both on the ledger — is **deferred to the full version** (the accounting-correct path when money has already changed hands).
+
+### Deferred to the full version (not POC)
+
+- **Credit notes** — the offset-don't-cancel correction described above.
+- **Email delivery** — at finalize, offer to **send the invoice to chosen client contacts** by email (recipients picked from the client's contacts). The POC output is on-screen + PDF only (see [Output](#output)); no email or gateway.
+- **Logo upload** — the company logo will eventually be **configurable on the Settings page**, accepting **image files only** (PNG/JPEG/WebP/GIF/SVG). The `Asset` table and finalize's logo-by-reference snapshot already exist to receive it; only the upload UI and the `lib/assets.ts` seam remain (deferred — D17).
+
+## Output
+
+A **polished on-screen invoice** in the browser, plus **PDF download / print**. No email delivery or payment gateway in the POC.
+
+## Invoice fields
+
+- **Header / branding** — company logo, business name, and "from" details, from the Organization; likewise **snapshotted at finalize** (logo by reference). The business name, "from" block, and invoice defaults (currency, tax, terms, number prefix, footer) are editable on the **Settings** page; the **logo upload is deferred** (see below).
+- **Bill-to** — client name, contact, address; pulled live from the Client record on a draft, then **snapshotted at finalize** so a later client-address change can't rewrite a sent invoice (G5).
+- **Reference block** — the invoice number (pre-filled and editable on the draft; see lifecycle), issue date, **payment terms and a due date derived from them** (terms pre-filled from the Organization default; the **due date is user-overridable** on the draft), and the **client PO reference(s)** — taken from the PO(s) selected per project (see [Purchase orders](#purchase-orders-per-project-spend-tracking)), snapshotted at finalize.
+- **Line items** — per the chosen grouping.
+- **Money block** — subtotal, optional **discount** (percent or flat), a single optional **tax** (percent applied to subtotal after discount; compound/multiple taxes are out of scope), total. Every step rounds **per line, half-up, then sums** (see below), so the printed figures always add up.
+- **Footer** — notes / terms.
+- **Currency** — taken from the client record.
+
+## Money-handling assumption (a "why" worth stating)
+
+Monetary amounts are stored as **integer minor units** (e.g. cents), not floating-point, to avoid rounding errors like `0.1 + 0.2 ≠ 0.3`. Formatting to `$1,800.00` happens only at display time, through **one central formatter** that takes the currency (never a hardcoded `÷100`). The POC targets 2-decimal currencies but stores nothing that blocks other exponents (JPY has 0, some have 3) later. (In LabVIEW terms: keep the wire an integer of pennies; convert to a formatted string only at the indicator.)
+
+**Rounding rule.** When math yields fractional minor units (an odd rate, or `8.25%` tax), round **each line item to the currency's minor unit, half-up (away from zero)**, then make the subtotal the sum of the rounded lines; apply the discount, then the tax, rounding each the same way. This keeps the visible line items summing exactly to the total — the whole point of storing integer minor units.
