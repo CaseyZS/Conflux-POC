@@ -4,6 +4,8 @@ All notable user-facing changes to Conflux. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-03
+
 ### Added
 
 - Sign in / sign out with the seeded demo account (`admin@conflux.test`); logged-out visitors are redirected to the sign-in page.
