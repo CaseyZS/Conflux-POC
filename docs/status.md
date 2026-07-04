@@ -54,7 +54,7 @@ Review-driven additions on top of segs 1–2 (all committed on the branch): invo
 ## Open questions / deferred decisions
 
 - Manager time visibility **policy** (own vs. only-managed-projects vs. all) is still open; the **mechanism** is settled — owner-scoped rows widened by `time.view.all` (see [access-control](requirements/access-control.md)). Moot while single-user.
-- Production hosting target. Deferred, but a SaaS is inherently hosted (see `architecture.md`).
+- Production hosting target. Platform decided (Vercel + Neon, `docs/deployment.md`, D18); not yet provisioned. Purpose (demo vs. early production) still open, which the migration steps don't depend on.
 - Whether Admin is an orthogonal flag or a top role — intentionally left open because roles become customizable (see [access-control](requirements/access-control.md)).
 
 ## Doc map (where things live)
@@ -62,5 +62,6 @@ Review-driven additions on top of segs 1–2 (all committed on the branch): invo
 - `docs/requirements.md` — **index** of what we're building; links to the per-topic docs in `docs/requirements/` (data model, time tracking, invoicing, access-control, tech & NFR).
 - `docs/plan.md` — **the build plan**: Prisma schema, shared foundations, milestones M0–M5 + build-progress table.
 - `docs/architecture.md` — **guardrails + decisions**; read before changing the architecture.
+- `docs/deployment.md` — **hosting decision + migration/deploy steps**; read before provisioning anything.
 - `docs/status.md` — **this file**; where we are and what's next.
 - `AGENTS.md` — **how** we work (git flow, conventions, design checks).

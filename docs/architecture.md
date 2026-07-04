@@ -2,7 +2,7 @@
 
 The load-bearing rules and decisions that keep the POC from painting us into a corner as Conflux grows from a single-user demo into a multi-tenant SaaS. The POC implementation stays deliberately small; these guardrails keep its _shape_ forward-compatible. This is the **first doc to read before making or changing an architectural decision**.
 
-Companion docs: [requirements.md](./requirements.md) (what we're building), [status.md](./status.md) (where we are / what's next), [AGENTS.md](../AGENTS.md) (how we work).
+Companion docs: [requirements.md](./requirements.md) (what we're building), [status.md](./status.md) (where we are / what's next), [deployment.md](./deployment.md) (where it runs), [AGENTS.md](../AGENTS.md) (how we work).
 
 ## How to use this file
 
@@ -62,6 +62,7 @@ Point-in-time decisions with their rationale, so future sessions can revisit del
 | D15 | Invoice number is pre-filled (highest existing + 1) and **editable on the draft**, frozen at finalize; unique per org but **not strictly gapless** | Two-way | Supersedes the original gapless-counter design (plan §"Gapless invoice numbers") at the user's request; matches how QuickBooks/Wave/FreshBooks work. The `@@unique` index still bars duplicates; strict gaplessness (an accounting/VAT nicety) is the deliberate trade-off, reversible by restoring the `invoiceNextNumber` counter ([invoicing](./requirements/invoicing.md)). | 2026-07-03 |
 | D16 | A finalized invoice is corrected by **voiding** it (keep the record, release the billed time/fees back to the pool), not by editing; **credit notes deferred** | Two-way | Immutability (G5) needs a correction path; void is the reverse of finalize and reuses the existing anti-double-bill links, so it's small and additive. A credit note (offset-don't-cancel, for already-paid/filed invoices) and email delivery at finalize are recorded as full-version work, not POC ([invoicing](./requirements/invoicing.md)). | 2026-07-03 |
 | D17 | **Logo/branding-image upload is deferred** — the org Settings page ships without it; when built it lives on Settings and accepts **image files only** (PNG/JPEG/WebP/GIF/SVG) | Two-way | Purely additive: the `Asset` table and finalize's `logoAssetId`-by-reference snapshot already exist (currently always null), so the remaining work is just the upload UI + the `lib/assets.ts` read/write seam. Deferring keeps M5's settings segment focused on the text/number branding the demo actually needs ([invoicing](./requirements/invoicing.md)). | 2026-07-03 |
+| D18 | Hosting: **Vercel** (app) + **Neon** (managed Postgres) | Two-way | Fully-managed ops, native Next.js/App-Router support, and free per-branch preview URLs matching gitflow; the ORM boundary (G8) keeps the SQLite→Postgres switch this depends on a config change, not a rewrite, so the host stays swappable too ([deployment](./deployment.md)). | 2026-07-03 |
 
 ## When to revisit a guardrail
 
