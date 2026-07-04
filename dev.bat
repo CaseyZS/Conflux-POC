@@ -5,6 +5,23 @@ REM Double-click this file, or run `dev.bat` from a terminal at the repo root.
 REM Work from this script's own folder so it runs regardless of where it's invoked.
 cd /d "%~dp0"
 
+REM On a fresh clone there's no node_modules yet, so install first. This also runs
+REM the postinstall (`prisma generate`), which creates the client the app needs.
+REM Skipped on later runs so the normal launch stays fast.
+if not exist "node_modules" (
+    echo First run detected - installing dependencies with npm install...
+    echo This can take a couple of minutes; it only happens once.
+    echo.
+    call npm install
+    if errorlevel 1 (
+        echo.
+        echo npm install failed. Fix the error above, then run dev.bat again.
+        pause
+        exit /b 1
+    )
+    echo.
+)
+
 echo Starting the Conflux dev server (npm run dev)...
 echo A browser will open at http://localhost:3000 once the server is ready.
 echo Press Ctrl+C in this window to stop the server.
