@@ -13,6 +13,8 @@ npm run db:seed             # load the demo data
 npm run dev                 # start the app at http://localhost:3000
 ```
 
+Shortcut: after the one-time `install` / `migrate` / `seed` above, double-click **`dev.bat`** (repo root) to start the server and open `http://localhost:3000` in your browser once it's ready — it replaces the `npm run dev` step.
+
 Sign-in (seeded demo admin, documented in `README.md`):
 
 - **Email:** `admin@conflux.test`
