@@ -54,7 +54,7 @@ Review-driven additions on top of segs 1–2 (all committed on the branch): invo
 ## Open questions / deferred decisions
 
 - Manager time visibility **policy** (own vs. only-managed-projects vs. all) is still open; the **mechanism** is settled — owner-scoped rows widened by `time.view.all` (see [access-control](requirements/access-control.md)). Moot while single-user.
-- Production hosting target. Platform decided (Vercel + Neon, `docs/deployment.md`, D18); not yet provisioned. Purpose (demo vs. early production) still open, which the migration steps don't depend on.
+- Production hosting target. Platform decided (Railway — app + managed Postgres, `docs/deployment.md`, D18); not yet provisioned. Purpose (demo vs. early production) still open, which the migration steps don't depend on.
 - Whether Admin is an orthogonal flag or a top role — intentionally left open because roles become customizable (see [access-control](requirements/access-control.md)).
 
 ## Doc map (where things live)
