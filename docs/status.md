@@ -5,8 +5,8 @@ The single source of "where we are and what's next," so any session can resume w
 ## Snapshot
 
 - **Date:** 2026-07-03
-- **Phase:** **M5 — Invoice output & demo polish** — **all six segments complete** on `feature/m5-invoice-output`; the milestone is green and awaiting your review + merge into `develop`. M4 (invoicing lifecycle) already merged.
-- **Git:** `develop` holds requirements + plan + M0–M4 (invoicing merged 2026-07-03, plus a `derive.ts` NUL→`\x00` hotfix); working branch `feature/m5-invoice-output` carries all of M5 (publishing branches stays with the maintainer).
+- **Phase:** **M5 — Invoice output & demo polish — done and merged into `develop`** (2026-07-03, `--no-ff`; the `feature/m5-invoice-output` branch is deleted). `develop` now holds M0–M5 and the POC is demo-ready end to end. Next up is the demo dry-run and a production `next build` gate (see "Next up").
+- **Git:** `develop` holds requirements + plan + M0–M5 (M5 merged 2026-07-03 `--no-ff`; the feature branch is deleted locally and on origin, and `develop` is in sync with `origin/develop`). No working branch is open. Publishing to `main` / cutting a release stays with the maintainer.
 - **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`). Land on the **dashboard** (this week/today time, open drafts, awaiting payment, recent invoices), track time in the day (`/time`) and week (`/time/week`) views, tour clients → projects → tasks, tune org defaults + the **H:MM-vs-decimal time format** at `/settings`, then draft → finalize → **Download PDF** at `/invoices`. Seed v5 seeds all three invoice states (paid INV-0001, sent INV-0003, draft INV-0002). Full script in **`docs/demo.md`**.
 
 ## Done
@@ -30,9 +30,9 @@ The single source of "where we are and what's next," so any session can resume w
 
 - **M4 — Invoicing lifecycle built & merged** (2026-07-03, `feature/m4-invoicing`, segs 0–5): the invoice money pipeline in `lib/money.ts` (integer half-up rounding, percent-XOR-flat discount clamped to the subtotal, single tax after discount — 15 tests incl. the lines-sum-to-total invariant); `/invoices` list + new-invoice flow (active client → project selection with unbilled H:MM / fee amounts → draft with `InvoiceProject` rows, org defaults copied in); the draft editor — time lines derived live from the unbilled pool (billable, hourly, not running, never billed) through pure `derive.ts` (task grouping splits by rate like person does — every line carries one rate; person gets the "Bob (Design)" parenthetical when rate-split; summary collapses to hours × rate when uniform, 1 × amount when mixed; detailed keeps notes; date/person/task/note toggles annotate without stuttering — 14 tests), fixed-fee lines, manual lines (thousandth quantities, optional project attribution), settings (grouping/toggles, issue + due dates with due derived from terms until overridden, discount, tax, PO, footer), delete-draft; **finalize** in one transaction (`finalize.ts`, shared with the seed): gapless `INV-####` consumed from the org counter, snapshot of lines (print positions), totals, currency, bill-to, from + logo-by-reference, anti-double-bill links for time entries and fixed fees, with the pool predicate re-run inside the tx; sent→paid as the second forward-only flag; billed entries render locked in the day view. Status vocabulary settled: the stored lifecycle is the schema's three states — **Finalize is the draft→sent transition**. Seed v4: paid INV-0001 over the dedicated Brand Refresh history (billed through the real finalize; the seed never touches billed entries on re-run) + an open Acme draft with manual line/8.25% tax/PO. 141 unit tests; live checks 23 (finalize domain: snapshot fields, five entries linked, second finalize refused, second draft finds an empty pool, fee link, counter) + 12 (finalized view + day-view locks) + 44 (regression incl. exact derived amounts); lint/build green. Merged into `develop` 2026-07-03; a follow-up `hotfix/derive-nul-escape` rewrote `derive.ts`'s raw-NUL group-key delimiter as the `\x00` escape (git had classified the file binary) — identical runtime byte, no behavior change.
 
-## M5 — done (awaiting review + merge)
+## M5 — done and merged
 
-**M5 — Invoice output & demo polish** on `feature/m5-invoice-output` (off `develop`). All segments landed; the exit criterion (a full stakeholder demo from seed, ending in a PDF) is met — see `docs/demo.md`. Segment plan:
+**M5 — Invoice output & demo polish**, built on `feature/m5-invoice-output` (off `develop`) and merged into `develop` 2026-07-03 (`--no-ff`; branch deleted). All segments landed; the exit criterion (a full stakeholder demo from seed, ending in a PDF) is met — see `docs/demo.md`. Segment plan:
 
 - [x] **Seg 0 — Open the milestone.** Plan progress + status + this segment checklist; M4 merged into `develop` (plus the `derive.ts` NUL→`\x00` hotfix).
 - [x] **Seg 1 — Invoice document.** One styled `InvoiceDocument` component; the finalized invoice renders through it on screen (the polished view) with print CSS tuned. Drafts keep the working editor.
@@ -46,9 +46,10 @@ Review-driven additions on top of segs 1–2 (all committed on the branch): invo
 
 ## Next up (ordered)
 
-1. **You review + merge** `feature/m5-invoice-output` into `develop` — the milestone is green (all tests pass, lint/types clean, seed + demo verified). After the merge the POC is demo-ready end to end; `develop` would then hold M0–M5.
+1. **Production build gate** — `next build` was **not** run before the merge because a dev server was live on port 3000 (building corrupts its `.next` cache). Stop the dev server, then run `npm run build` on `develop` to catch any server/client-boundary issue that `tsc` doesn't. The merge rests on the green signals that were run: 162 unit tests, clean `tsc` / `eslint` / `lint:md`.
 2. **Run the demo** — walk `docs/demo.md` once against a fresh `npx prisma migrate reset` to confirm it flows before showing a stakeholder.
-3. Beyond the POC: the deferrals recorded below (logo upload D17, credit notes, email-at-finalize) and the open policy questions.
+3. **Publish** — when ready, the maintainer merges `develop` → `main` and cuts a release (the `release` skill holds the checklist).
+4. Beyond the POC: the deferrals recorded below (logo upload D17, credit notes, email-at-finalize) and the open policy questions.
 
 ## Open questions / deferred decisions
 
