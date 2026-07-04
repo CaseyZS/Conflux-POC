@@ -46,10 +46,11 @@ Review-driven additions on top of segs 1–2 (all committed on the branch): invo
 
 ## Next up (ordered)
 
-1. **Production build gate** — `next build` was **not** run before the merge because a dev server was live on port 3000 (building corrupts its `.next` cache). Stop the dev server, then run `npm run build` on `develop` to catch any server/client-boundary issue that `tsc` doesn't. The merge rests on the green signals that were run: 162 unit tests, clean `tsc` / `eslint` / `lint:md`.
-2. **Run the demo** — walk `docs/demo.md` once against a fresh `npx prisma migrate reset` to confirm it flows before showing a stakeholder.
-3. **Publish** — when ready, the maintainer merges `develop` → `main` and cuts a release (the `release` skill holds the checklist).
-4. Beyond the POC: the deferrals recorded below (logo upload D17, credit notes, email-at-finalize) and the open policy questions.
+1. **Purchase orders (D19) — the next feature to build.** Requirement captured on `feature/project-purchase-orders` (data-model + invoicing + decision log): per-project POs with authorized amounts, PO chosen per included project at invoice time, remaining funds derived (not stored), warn-but-allow overdraw. The first post-POC feature. One open question to settle when building — attribution under the Summary grouping (see [invoicing](requirements/invoicing.md) → "Purchase orders"). Needs a build plan (schema fields, project-edit UI, invoice-draft dropdown, the derived-remaining read layer) before implementation.
+2. **Production build gate** — `next build` was **not** run before the M5 merge because a dev server was live on port 3000 (building corrupts its `.next` cache). Stop the dev server, then run `npm run build` on `develop` to catch any server/client-boundary issue that `tsc` doesn't. The merge rests on the green signals that were run: 162 unit tests, clean `tsc` / `eslint` / `lint:md`.
+3. **Run the demo** — walk `docs/demo.md` once against a fresh `npx prisma migrate reset` to confirm it flows before showing a stakeholder.
+4. **Publish** — when ready, the maintainer merges `develop` → `main` and cuts a release (the `release` skill holds the checklist).
+5. Beyond the POC: the other deferrals recorded below (logo upload D17, credit notes, email-at-finalize) and the open policy questions.
 
 ## Open questions / deferred decisions
 
