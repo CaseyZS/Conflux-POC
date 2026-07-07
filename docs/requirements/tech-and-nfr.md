@@ -31,6 +31,6 @@ _Part of the [Conflux requirements](../requirements.md). Cross-cutting. The enfo
 
 The primary goal is a clickable walkthrough, so the demo can't start from an empty database. Seed: one Organization, its seeded Admin user, a handful of Clients (with invoice-ready details), Projects covering all three billing types and both wired billing methods (per-project and per-task), the global Task list, some logged time across a few days, and at least one **finalized** sample invoice — enough that every screen has something real to show.
 
-## Structure / modularity (per AGENTS.md)
+## Structure / modularity
 
 Organize by **feature** (clients, projects, time tracking, invoicing, access) so adding or changing a feature touches a minimal, predictable set of files. Keep the authorization check (`can(user, capability)`) and the org-scoping in **one shared place** each, so the golden rules from [Users & access](./access-control.md) are enforced consistently rather than re-implemented per feature.

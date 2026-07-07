@@ -41,7 +41,6 @@ The seed creates one admin account (demo-only credentials, safe to publish):
 - [`docs/requirements.md`](docs/requirements.md) — what we're building
 - [`docs/architecture.md`](docs/architecture.md) — guardrails + decision log
 - [`docs/plan.md`](docs/plan.md) — build plan (schema, milestones M0–M5)
-- [`AGENTS.md`](AGENTS.md) — working conventions
 
 ## License
 

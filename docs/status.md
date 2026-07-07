@@ -1,6 +1,6 @@
 # Conflux — Project Status
 
-The single source of "where we are and what's next," so any session can resume without relying on memory or chat history. **Update this at the end of every working session** (see the end-of-session ritual in `AGENTS.md`).
+The single source of "where we are and what's next," so any session can resume without relying on memory or chat history. **Update this at the end of every working session.**
 
 ## Snapshot
 
@@ -11,11 +11,11 @@ The single source of "where we are and what's next," so any session can resume w
 
 ## Done
 
-- Working conventions established (`AGENTS.md`).
+- Working conventions established.
 - Full requirements interview captured in `docs/requirements.md` — 6 sections + in/out scope summary.
 - Architecture guardrails and decision log established (`docs/architecture.md`).
 - This status/continuity file created.
-- `AGENTS.md` conventions extended: one-way/two-way door test (design-check trigger C), decision-log upkeep rule, forward-compat working-style bullet. `.gitattributes` added to normalize line endings.
+- Working conventions extended: one-way/two-way door test (design-check trigger C), decision-log upkeep rule, forward-compat working-style bullet. `.gitattributes` added to normalize line endings.
 - Requirements split into an index (`docs/requirements.md`) + per-topic docs under `docs/requirements/` (data model, time tracking, invoicing, access-control, tech-and-nfr); cross-references in `architecture.md` updated.
 - Requirements **gap review** completed across four passes (Tier-1 one-way doors, external pass A: rate.view/periods/date-only, pass B structural: Invoice entities/G12/grouping, pass C compliance/lifecycle: finalize snapshots/Membership.active/D12); decision log current through D12. All merged to `develop`.
 - **Implementation plan written** (`docs/plan.md`): the full Prisma schema (15 models honoring D1–D14, with schema-wide conventions for SQLite's dialect limits), the shared foundations (feature-first layout, the `lib/` seams for auth/authz/scoping/money/dates/assets, Vitest), and milestones M0–M5, each with scope, a staged seed increment, and a demoable exit criterion.
@@ -65,4 +65,3 @@ Review-driven additions on top of segs 1–2 (all committed on the branch): invo
 - `docs/architecture.md` — **guardrails + decisions**; read before changing the architecture.
 - `docs/deployment.md` — **hosting decision + migration/deploy steps**; read before provisioning anything.
 - `docs/status.md` — **this file**; where we are and what's next.
-- `AGENTS.md` — **how** we work (git flow, conventions, design checks).

@@ -407,7 +407,7 @@ Routes stay thin (parse params, call the feature, render); logic lives in the fe
 - `authz.ts` — capability union across multiple roles, inactive-membership denial.
 - `scope.ts` — the extension injects the org filter on every verb (the tenant-isolation habit, tested once, trusted everywhere).
 
-E2E/browser automation is **out** for the POC — the demo walkthrough itself is the manual E2E. Prettier (with `proseWrap: "never"` for Markdown) and ESLint arrive with the M0 scaffold, giving `AGENTS.md`'s `npm run format:md` / `lint:md` their real targets.
+E2E/browser automation is **out** for the POC — the demo walkthrough itself is the manual E2E. Prettier (with `proseWrap: "never"` for Markdown) and ESLint arrive with the M0 scaffold, giving the `npm run format:md` / `lint:md` scripts their real targets.
 
 ## Milestone details
 
