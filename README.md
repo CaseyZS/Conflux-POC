@@ -4,6 +4,12 @@ A self-hosted time-tracking and invoicing app (Harvest-style), built as a proof 
 
 ## Getting started
 
+### Quick start (Windows)
+
+Double-click **`dev.bat`** in the repo root. On the first run it does the whole setup for you — creates your `.env`, installs dependencies, and creates and seeds the database — then starts the dev server and opens <http://localhost:3000> in your browser. Later runs skip the setup and just launch the server.
+
+### Manual setup (any OS)
+
 ```bash
 npm install
 cp .env.example .env
