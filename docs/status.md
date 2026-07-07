@@ -4,9 +4,9 @@ The single source of "where we are and what's next," so any session can resume w
 
 ## Snapshot
 
-- **Date:** 2026-07-03
+- **Date:** 2026-07-06
 - **Phase:** **M5 — Invoice output & demo polish — done and merged into `develop`** (2026-07-03, `--no-ff`; the `feature/m5-invoice-output` branch is deleted). `develop` now holds M0–M5 and the POC is demo-ready end to end. Next up is the demo dry-run and a production `next build` gate (see "Next up").
-- **Git:** `develop` holds requirements + plan + M0–M5 (M5 merged 2026-07-03 `--no-ff`; the feature branch is deleted locally and on origin, and `develop` is in sync with `origin/develop`). No working branch is open. Publishing to `main` / cutting a release stays with the maintainer.
+- **Git:** Now open source on **GitHub** (`github.com/CaseyZS/Conflux-POC`, MIT license), migrated from GitLab on 2026-07-06. `main` holds the released line — **v0.1.1** tagged and pushed (v0.1.0 before it) — and `develop` is back-merged and in sync with `origin`. No working branch is open. Releases run through the `release` skill; merging/publishing stays with the maintainer.
 - **App runnable?** **Yes** — `npm run dev`; log in as the seeded admin (credentials in `README.md`). Land on the **dashboard** (this week/today time, open drafts, awaiting payment, recent invoices), track time in the day (`/time`) and week (`/time/week`) views, tour clients → projects → tasks, tune org defaults + the **H:MM-vs-decimal time format** at `/settings`, then draft → finalize → **Download PDF** at `/invoices`. Seed v5 seeds all three invoice states (paid INV-0001, sent INV-0003, draft INV-0002). Full script in **`docs/demo.md`**.
 
 ## Done
@@ -49,7 +49,7 @@ Review-driven additions on top of segs 1–2 (all committed on the branch): invo
 1. **Purchase orders (D19) — the next feature to build.** Requirement captured on `feature/project-purchase-orders` (data-model + invoicing + decision log): per-project POs with authorized amounts, PO chosen per included project at invoice time, remaining funds derived (not stored), warn-but-allow overdraw. The first post-POC feature. One open question to settle when building — attribution under the Summary grouping (see [invoicing](requirements/invoicing.md) → "Purchase orders"). Needs a build plan (schema fields, project-edit UI, invoice-draft dropdown, the derived-remaining read layer) before implementation.
 2. **Production build gate** — `next build` was **not** run before the M5 merge because a dev server was live on port 3000 (building corrupts its `.next` cache). Stop the dev server, then run `npm run build` on `develop` to catch any server/client-boundary issue that `tsc` doesn't. The merge rests on the green signals that were run: 162 unit tests, clean `tsc` / `eslint` / `lint:md`.
 3. **Run the demo** — walk `docs/demo.md` once against a fresh `npx prisma migrate reset` to confirm it flows before showing a stakeholder.
-4. **Publish** — when ready, the maintainer merges `develop` → `main` and cuts a release (the `release` skill holds the checklist).
+4. **Publish** — done for now: the repo is public on GitHub under MIT and **v0.1.1** is tagged and pushed (v0.1.0 before it). The v0.1.1 cut added the MIT license, GitHub Actions CI, and one-command Windows setup (`dev.bat`). Future releases run through the `release` skill; merging/publishing stays with the maintainer.
 5. Beyond the POC: the other deferrals recorded below (logo upload D17, credit notes, email-at-finalize) and the open policy questions.
 
 ## Open questions / deferred decisions
