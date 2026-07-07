@@ -2,12 +2,12 @@
 
 The load-bearing rules and decisions that keep the POC from painting us into a corner as Conflux grows from a single-user demo into a multi-tenant SaaS. The POC implementation stays deliberately small; these guardrails keep its _shape_ forward-compatible. This is the **first doc to read before making or changing an architectural decision**.
 
-Companion docs: [requirements.md](./requirements.md) (what we're building), [status.md](./status.md) (where we are / what's next), [deployment.md](./deployment.md) (where it runs), [AGENTS.md](../AGENTS.md) (how we work).
+Companion docs: [requirements.md](./requirements.md) (what we're building), [status.md](./status.md) (where we are / what's next), [deployment.md](./deployment.md) (where it runs).
 
 ## How to use this file
 
 - Before any significant design decision, classify it as a **one-way door** or a **two-way door** (see below).
-- **Guard one-way doors** against the guardrails here; **build two-way doors the simplest way** that works (per the back-of-the-envelope check in `AGENTS.md`) and change them when the need is real.
+- **Guard one-way doors** against the guardrails here; **build two-way doors the simplest way** that works (per the back-of-the-envelope design check) and change them when the need is real.
 - When a decision establishes a new **seam** (a place future growth plugs in), add it under _Guardrails_. When it's a notable choice worth remembering the _why_ for, add a row to the _Decision log_.
 - Keep this file current as decisions land — it only prevents corners if it stays honest.
 

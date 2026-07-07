@@ -1,6 +1,6 @@
 {
   "name": "conflux",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "format:md": "prettier --write \"**/*.md\"",
     "lint:md": "prettier --check \"**/*.md\"",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

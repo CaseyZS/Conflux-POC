@@ -4,6 +4,17 @@ All notable user-facing changes to Conflux. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-06
+
+### Added
+
+- Conflux is now open source under the MIT license.
+- Continuous integration: the test suite runs on GitHub Actions for every push and pull request.
+
+### Changed
+
+- Windows quick start: double-clicking `dev.bat` now does the whole first-run setup on a fresh clone — creates `.env`, installs dependencies, and creates and seeds the database — before starting the app, so it goes from clone to running in one step.
+
 ## [0.1.0] - 2026-07-03
 
 ### Added
